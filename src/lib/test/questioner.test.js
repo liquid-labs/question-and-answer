@@ -9,8 +9,9 @@ import { Questioner } from '../questioner'
 
 const input = stdin()
 
+jest.setTimeout(1000) // tried to set this in 'beforeAll', but it failed; we try and restore value 'afterAll' tests.
+
 describe('Questioner', () => {
-  beforeAll(() => jest.setTimeout(1000))
   afterAll(() => jest.setTimeout(5000)) // restore default
 
   test('can process a simple boolean question', (done) => {
@@ -80,7 +81,7 @@ describe('Questioner', () => {
     ['5.5', 'float', 5.5],
     ['6.6', 'numeric', 6.6]
   ])("Value '%s' type '%s' -> %p", (value, type, expected, done) => {
-    const questioner = new Questioner()
+    const questioner = new Questioner({ input })
     const ib = structuredClone(simpleIB)
     ib.questions[0].paramType = type
     questioner.interogationBundle = ib

@@ -28,7 +28,7 @@ const Questioner = class {
         rl.prompt()
 
         const it = rl[Symbol.asyncIterator]()
-        const answer = (await it.next()).value.trim() // TODO: check that 'answer' is in the right form
+        const answer = await it.next().value.trim() // TODO: check that 'answer' is in the right form
 
         const type = q.paramType || 'boolean'
         if (verifyAnswerForm({ type, value: answer })) {
@@ -107,13 +107,12 @@ const Questioner = class {
 
 const verifyAnswerForm = ({ type, value }) => {
   if ((/int(?:eger)?/i).test(type)) {
-    if (isNaN(value) || !value.match(/^\d+$/)) {
+    if (isNaN(value) || !answer.match(/^\d+/)) {
       return false
     }
   }
-  else if ((/float|numeric/i).test(type)) {
-    if (isNaN(value) || !value.match(/^-?\d+(?:\.\d+)?$/)) {
-      console.log('huh:', value, isNan(value))
+  else if ((/float|numeric/i).test(q.paramType)) {
+    if (isNaN(value) || !answer.match(/-?(?:\\d+|\\d+\\.\\d+)/)) {
       return false
     }
   }
