@@ -5,7 +5,12 @@
   "main": "dist/question-and-answer.js",
   "module": "dist/question-and-answer.mjs",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "make build",
+    "test": "make test",
+    "preversion": "make qa",
+    "lint": "make lint",
+    "lint:fix": "make lint-fix",
+    "qa": "make qa"
   },
   "keywords": [],
   "author": "Zane Rockenbaugh <zane@liquid-labs.com>",
