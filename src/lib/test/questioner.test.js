@@ -21,7 +21,7 @@ describe('Questioner', () => {
     input.send('yes\n')
   })
 
-  test.each([ ['yes', 'us'], ['no', 'them'] ])('Global map %s -> %s', (answer, mapping, done) => {
+  test.each([['yes', 'us'], ['no', 'them']])('Global map %s -> %s', (answer, mapping, done) => {
     const questioner = new Questioner()
     questioner.interogationBundle = simpleMapIB
 
@@ -32,7 +32,7 @@ describe('Questioner', () => {
     input.send(answer + '\n')
   })
 
-  test.each([ ['yes', 'us'], ['no', 'them'] ])('Local map %s -> %s', (answer, mapping, done) => {
+  test.each([['yes', 'us'], ['no', 'them']])('Local map %s -> %s', (answer, mapping, done) => {
     const questioner = new Questioner()
     questioner.interogationBundle = simpleLocalMapIB
 
@@ -43,12 +43,12 @@ describe('Questioner', () => {
     input.send(answer + '\n')
   })
 
-  test.each([ ['yes', DO_YOU_LIKE_MILK], ['no', IS_THIS_THE_END] ])
-  ('Conditional question %s -> %s', (answer, followup, done) => {
+  test.each([['yes', DO_YOU_LIKE_MILK], ['no', IS_THIS_THE_END]]) // eslint-disable-line func-call-spacing
+  ('Conditional question %s -> %s', (answer, followup, done) => { // eslint-disable-line no-unexpected-multiline
     const testScriptPath = fsPath.join(__dirname, 'conditional-question.js')
 
     // You cannot (as of Node 19.3.0) listen for events on your own stdout, so we have to create a child process.
-    var child = spawn('node', [testScriptPath, answer])
+    const child = spawn('node', [testScriptPath, answer])
 
     child.stdout.resume()
     child.stdout.once('data', (output) => {
@@ -69,13 +69,13 @@ describe('Questioner', () => {
     child.stdin.write(answer + '\n')
   })
 
-  test.each([ 
-    [ 'true', 'boolean', true ],
-    [ 'true', 'bool', true ],
-    [ 'true', 'string', 'true' ],
-    [ '5', 'integer', 5 ],
-    [ '5.5', 'float', 5.5 ],
-    [ '6.6', 'numeric', 6.6 ]
+  test.each([
+    ['true', 'boolean', true],
+    ['true', 'bool', true],
+    ['true', 'string', 'true'],
+    ['5', 'integer', 5],
+    ['5.5', 'float', 5.5],
+    ['6.6', 'numeric', 6.6]
   ])("Value '%s' type '%s' -> %p", (value, type, expected, done) => {
     const questioner = new Questioner()
     const ib = structuredClone(simpleIB)
