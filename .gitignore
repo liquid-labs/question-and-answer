@@ -1,0 +1,9 @@
+/bin
+/dist
+/coverage
+/test-staging
+/node_modules
+/.yalc
+/yalc.lock
+/last-test.txt
+/last-lint.txt

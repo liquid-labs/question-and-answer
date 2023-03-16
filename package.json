@@ -3,6 +3,7 @@
   "version": "1.0.0-alpha.0",
   "description": "",
   "main": "dist/question-and-answer.js",
+  "module": "dist/question-and-answer.mjs",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -13,5 +14,12 @@
   "bugs": {
     "url": "https://github.com/liquid-labs/question-and-answer/issues"
   },
-  "homepage": "https://github.com/liquid-labs/question-and-answer#readme"
+  "homepage": "https://github.com/liquid-labs/question-and-answer#readme",
+  "dependencies": {
+    "@liquid-labs/condition-eval": "^1.0.0-alpha.12"
+  },
+  "devDependencies": {
+    "@liquid-labs/catalyst-scripts": "^1.0.0-alpha.58",
+    "mock-stdin": "^1.0.0"
+  }
 }

@@ -1,0 +1,8 @@
+{
+  "questions": [
+    { 
+      "prompt": "What is the value?", 
+      "parameter": "VAR" 
+    }
+  ]
+}
