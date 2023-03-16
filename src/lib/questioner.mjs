@@ -5,10 +5,20 @@ import createError from 'http-errors'
 import { Evaluator } from '@liquid-labs/condition-eval'
 
 const Questioner = class {
+  #input
+  #output
   #interogationBundle = []
   #values = {}
 
-  async #doQuestions({ input = process.stdin, output = process.stdout }) {
+  constructor({ input = process.stdin, output = process.stdout } = {}) {
+    this.#input = input
+    this.#output = output
+  }
+
+  async #doQuestions() {
+    const input = this.#input // just for ease of reference
+    const output = this.#output
+
     for (const q of this.#interogationBundle.questions) {
       const evaluator = new Evaluator({ parameters : this.#values })
 
@@ -82,12 +92,12 @@ const Questioner = class {
     })
   }
 
-  async question({ input, output } = {}) {
+  async question() {
     if (this.#interogationBundle === undefined) {
       throw createError.BadRequest("Must set 'interogation bundle' prior to invoking the questioning.")
     }
 
-    await this.#doQuestions({ input, output })
+    await this.#doQuestions()
 
     if (this.#interogationBundle.mappings !== undefined) {
       this.processMappings(this.#interogationBundle.mappings)

@@ -1,4 +1,4 @@
-/* global describe expect test */
+/* global afterAll beforeAll describe expect test */
 import * as fsPath from 'node:path'
 import { spawn } from 'node:child_process'
 
@@ -10,11 +10,14 @@ import { Questioner } from '../questioner'
 const input = stdin()
 
 describe('Questioner', () => {
+  beforeAll(() => jest.setTimeout(1000))
+  afterAll(() => jest.setTimeout(5000)) // restore default
+
   test('can process a simple boolean question', (done) => {
-    const questioner = new Questioner()
+    const questioner = new Questioner({ input })
     questioner.interogationBundle = simpleIB
 
-    questioner.question({ input }).then(() => {
+    questioner.question().then(() => {
       expect(questioner.values.IS_CLIENT).toBe(true)
       done()
     })
@@ -22,10 +25,10 @@ describe('Questioner', () => {
   })
 
   test.each([['yes', 'us'], ['no', 'them']])('Global map %s -> %s', (answer, mapping, done) => {
-    const questioner = new Questioner()
+    const questioner = new Questioner({ input })
     questioner.interogationBundle = simpleMapIB
 
-    questioner.question({ input }).then(() => {
+    questioner.question().then(() => {
       expect(questioner.values.ORG_COMMON_NAME).toBe(mapping)
       done()
     })
@@ -33,10 +36,10 @@ describe('Questioner', () => {
   })
 
   test.each([['yes', 'us'], ['no', 'them']])('Local map %s -> %s', (answer, mapping, done) => {
-    const questioner = new Questioner()
+    const questioner = new Questioner({ input })
     questioner.interogationBundle = simpleLocalMapIB
 
-    questioner.question({ input }).then(() => {
+    questioner.question().then(() => {
       expect(questioner.values.ORG_COMMON_NAME).toBe(mapping)
       done()
     })
