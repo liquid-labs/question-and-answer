@@ -3,7 +3,9 @@ ERROR:=$(error This version of make does not support required 'grouped-target' (
 endif
 
 .DELETE_ON_ERROR:
+
 .PRECIOUS: last-test.txt last-lint.txt
+	
 .PHONY: all build clean-test lint lint-fix qa test
 
 default: build
