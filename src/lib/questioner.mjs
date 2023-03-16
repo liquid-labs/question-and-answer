@@ -1,5 +1,7 @@
 import * as readline from 'node:readline'
 
+import createError from 'http-errors'
+
 import { Evaluator } from '@liquid-labs/condition-eval'
 
 const Questioner = class {
@@ -27,17 +29,21 @@ const Questioner = class {
             this.#values[q.parameter] = value
           }
           else if (( /string|numeric|float|int(eger)?/i ).test(q.paramType)) {
-            if (( /numeric/i ).test(q.paramType) && ! isNaN(answer.value)) {
-              throw new Error(`Parameter '${q.parameter}' must be a numeric type.`)
+            if (( /int(?:eger)?/i ).test(q.paramType)) {
+              if (isNaN(answer.value)) {
+                throw createError.BadRequest(`Parameter '${q.parameter}' must be a numeric type.`)
+              }
+              this.#values[q.parameter] = parseInt(answer.value)
             }
-            else if (( /float/i ).test(q.paramType) && isNaN(answer.value) && ( /-?\\d+\\.\\d+/ ).test(answer.value)) {
-              throw new Error(`Parameter '${q.parameter}' must be a (basic) floating point number.`)
+            else if (( /float|numeric/i ).test(q.paramType)) {
+              if (isNaN(answer.value) && ( /-?\\d+\\.\\d+/ ).test(answer.value)) {
+                throw new Error(`Parameter '${q.parameter}' must be a (basic) floating point number.`)
+              }
+              this.#values[q.parameter] = parseFloat(answer.value)
             }
-            else if (( /int(eger)?/i ).test(q.paramType) && isNaN(answer.value) && ( /-?\\d+/ ).test(answer.value)) {
-              throw new Error(`Parameter '${q.parameter}' must be an integer.`)
+            else { // treat as a string
+              this.#values[q.parameter] = answer.value
             }
-
-            this.#values[q.parameter] = answer.value
           }
           else {
             throw new Error(`Unknown parameter type '${q.paramType}' in 'questions' section.`)
