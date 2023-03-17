@@ -155,25 +155,24 @@ describe('Questioner', () => {
 
   describe('cookie parameters', () => {
     const questioner = new Questioner({ input })
-    let results
-    beforeAll(async () => {
+
+    beforeAll(async() => {
       questioner.interogationBundle = cookieParameterIB
 
       const qPromise = questioner.question()
       input.send('yes\n')
       await qPromise
-      results = questioner.results
     })
 
     test('are passed from questions', () =>
       expect(questioner.getResult('IS_CLIENT').handling).toBe('bundle')
     )
-  
-    test('are passed from question maps', () => 
+
+    test('are passed from question maps', () =>
       expect(questioner.getResult('ORG_COMMON_NAME').handling).toBe('bundle')
     )
 
-    test('are passed from question maps', () => 
+    test('are passed from question maps', () =>
       expect(questioner.getResult('TARGET_DEMO').handling).toBe('bundle')
     )
   })
