@@ -1,16 +1,18 @@
-/* global afterAll beforeAll describe expect fail test */
+/* global afterAll describe expect fail jest test */
 import * as fsPath from 'node:path'
 import { spawn } from 'node:child_process'
 
 import { stdin } from 'mock-stdin'
 
-import { 
+import {
+  badParameterIB,
+  noQuestionParameterIB,
+  noQuestionPromptIB,
   simpleIB,
-  simpleIntQuestionIB,
-  simpleMapIB, 
-  simpleLocalMapIB, 
-  DO_YOU_LIKE_MILK, 
-  IS_THE_COMPANY_THE_CLIENT, 
+  simpleMapIB,
+  simpleLocalMapIB,
+  DO_YOU_LIKE_MILK,
+  IS_THE_COMPANY_THE_CLIENT,
   IS_THIS_THE_END,
   WHATS_YOUR_FAVORITE_INT
 } from './test-data'
@@ -111,12 +113,13 @@ describe('Questioner', () => {
     child.stdout.resume()
     let count = 0
     child.stdout.on('data', (output) => {
+      console.log('blah:', count, output.toString()) // DEBUG
       try {
         if (count === 0) {
           expect(output.toString().trim()).toBe(WHATS_YOUR_FAVORITE_INT)
         }
-        else if (count === 1 && output.toString().split('\n').length == 2) {
-          expect(output.toString().trim()).toMatch(new RegExp(`not a valid.+\n.+favorite int`, 'm'))
+        else if (count === 1 && output.toString().split('\n').length === 2) {
+          expect(output.toString().trim()).toMatch(/not a valid.+\n.+favorite int/m)
           child.kill('SIGINT')
           done()
         }
@@ -131,12 +134,22 @@ describe('Questioner', () => {
       }
       catch (e) {
         child.kill('SIGINT')
-        throw(e)
+        fail(e)
+        done()
       }
-      
+
       count += 1
     })
 
     child.stdin.write('not a number\n')
+  })
+
+  test.each([
+    ['an invalid parameter type', badParameterIB, /unknown parameter type/i],
+    ["no 'parameter' for question", noQuestionParameterIB, /does not define a 'parameter'/],
+    ["no 'prompt' for question", noQuestionPromptIB, /does not define a 'prompt'/]
+  ])('Will raise an exception on %s.', (desc, ib, exceptionRe) => {
+    const questioner = new Questioner()
+    expect(() => { questioner.interogationBundle = ib }).toThrow(exceptionRe)
   })
 })

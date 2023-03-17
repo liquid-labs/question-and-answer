@@ -21,7 +21,7 @@ const Questioner = class {
     if (q.condition === undefined || evaluator.evalTruth(q.condition)) {
       // to avoid the 'MaxListenersExceededWarning', we have to create the rl inside the loop because everytime we do
       // our loop it ends up adding listeners for whatever reason.
-      const rl = readline.createInterface({ input: this.#input, output: this.#output, terminal : false })
+      const rl = readline.createInterface({ input : this.#input, output : this.#output, terminal : false })
 
       try {
         rl.setPrompt('\n' + q.prompt + ' ') // add newline for legibility
@@ -31,7 +31,7 @@ const Questioner = class {
         const answer = (await it.next()).value.trim() // TODO: check that 'answer' is in the right form
 
         const type = q.paramType || 'boolean'
-        const verifyResult = verifyAnswerForm({ type, value: answer })
+        const verifyResult = verifyAnswerForm({ type, value : answer })
         if (verifyResult === true) {
           if ((/bool(ean)?/i).test(type)) {
             const value = !!(/^\s*(?:y(?:es)?|t(?:rue)?)\s*$/i).test(answer)
@@ -69,7 +69,45 @@ const Questioner = class {
 
   get interogationBundle() { return this.#interogationBundle } // TODO: clone
 
-  set interogationBundle(ib) { this.#interogationBundle = ib }
+  set interogationBundle(ib) {
+    const verifyMappings = (mappings) => {
+      for (const { maps } of mappings) { // TODO: verify condition if present
+        for (const { source, target, value } of maps) {
+          if (target === undefined) {
+            throw createError.BadRequest("One of the mappings lacks a 'target' parameter.")
+          }
+          if (source === undefined && value === undefined) {
+            throw createError.BadRequest(`Mapping for '${target}' must specify either 'source' or 'value'.`)
+          }
+        }
+      }
+    }
+
+    ib.questions.forEach(({ mappings, parameter, paramType, prompt }, i) => {
+      // TODO: replace with some kind of JSON schema verification
+      if (parameter === undefined) {
+        throw createError.BadRequest(`Question ${i + 1} does not define a 'parameter'.`)
+      }
+      if (prompt === undefined) {
+        throw createError.BadRequest(`Question ${i + 1} does not define a 'prompt'.`)
+      }
+      if (paramType !== undefined && !paramType.match(/bool(?:ean)?|int(?:eger)?|float|numeric|string/)) {
+        throw createError.BadRequest(`Found unknown parameter type '${paramType}' in interogation bundle question ${i + 1}.`)
+      }
+
+      if (mappings) {
+        verifyMappings(mappings)
+      }
+
+      // TODO: verify conditionals...
+    })
+
+    if (ib.mappings) {
+      verifyMappings(ib.mappings)
+    }
+
+    this.#interogationBundle = ib
+  }
 
   processMappings(mappings) {
     mappings.forEach((mapping) => {
@@ -83,7 +121,7 @@ const Questioner = class {
           else if (map.value !== undefined) {
             this.#values[map.target] = map.value
           }
-          else {
+          else { // this should already be verified up front, but for the sake of comopletness
             throw new Error(`Mapping for '${map.target}' must specify either 'source' or 'value'.`)
           }
         })

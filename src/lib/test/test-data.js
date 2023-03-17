@@ -39,6 +39,24 @@ const conditionalQuestionIB = structuredClone(simpleIB)
 conditionalQuestionIB.questions.push({ condition : 'IS_CLIENT', prompt : DO_YOU_LIKE_MILK, parameter : 'LIKES_MILK' })
 conditionalQuestionIB.questions.push({ prompt : IS_THIS_THE_END, parameter : 'IS_END' })
 
+const badParameterIB = {
+  questions : [
+    { parameter : 'FOO', prompt : 'foo?', paramType : 'invalid' }
+  ]
+}
+
+const noQuestionParameterIB = {
+  questions : [
+    { prompt : 'hey' }
+  ]
+}
+
+const noQuestionPromptIB = {
+  questions : [
+    { parameter : 'FOO' }
+  ]
+}
+
 export {
   WHATS_YOUR_FAVORITE_INT,
   IS_THE_COMPANY_THE_CLIENT,
@@ -48,5 +66,8 @@ export {
   simpleIB,
   simpleMapIB,
   simpleLocalMapIB,
-  conditionalQuestionIB
+  conditionalQuestionIB,
+  badParameterIB,
+  noQuestionParameterIB,
+  noQuestionPromptIB
 }
