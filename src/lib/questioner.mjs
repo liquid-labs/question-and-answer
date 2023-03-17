@@ -16,10 +16,10 @@ const Questioner = class {
   }
 
   #addResult({ value, source }) {
-    // We want source second so that we create a new object rather than modify source. We want 'value' last because 
-    // the 'value' attached to the source is always a string, while the final value will have been converted by type. 
+    // We want source second so that we create a new object rather than modify source. We want 'value' last because
+    // the 'value' attached to the source is always a string, while the final value will have been converted by type.
     // We could also use 'structuredClone', but Object.assign should be sufficient.
-    this.#results.push(Object.assign({}, source, { value } ))
+    this.#results.push(Object.assign({}, source, { value }))
   }
 
   async #askQuestion(q) {
@@ -38,7 +38,7 @@ const Questioner = class {
         const type = q.paramType || 'string'
         const verifyResult = verifyAnswerForm({ type, value : answer })
         if (verifyResult === true) {
-          this.#addResult({ source: q, value: transformValue({ paramType: type, value: answer }) })
+          this.#addResult({ source : q, value : transformValue({ paramType : type, value : answer }) })
 
           if (q.mappings !== undefined) {
             this.#processMappings(q.mappings)
@@ -61,7 +61,7 @@ const Questioner = class {
   }
 
   #evalCondition(condition) {
-    const evaluator = new Evaluator({ parameters: this.values })
+    const evaluator = new Evaluator({ parameters : this.values })
     return evaluator.evalTruth(condition)
   }
 
@@ -118,10 +118,10 @@ const Questioner = class {
         mapping.maps.forEach((map) => {
           // having both source and value is not allowed and verified when the IB is loaded
           if (map.source !== undefined) {
-            this.#addResult({ source: map, value: transformValue(this.get(map.source))})
+            this.#addResult({ source : map, value : transformValue(this.get(map.source)) })
           }
           else if (map.value !== undefined) {
-            this.#addResult({ source: map, value: transformValue(map)})
+            this.#addResult({ source : map, value : transformValue(map) })
           }
           else { // this should already be verified up front, but for the sake of comopletness
             throw new Error(`Mapping for '${map.parameter}' must specify either 'source' or 'value'.`)
