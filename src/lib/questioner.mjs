@@ -8,17 +8,22 @@ const Questioner = class {
   #input
   #output
   #interogationBundle = []
-  #values = {}
+  #results = []
 
   constructor({ input = process.stdin, output = process.stdout } = {}) {
     this.#input = input
     this.#output = output
   }
 
-  async #askQuestion(q) {
-    const evaluator = new Evaluator({ parameters : this.#values })
+  #addResult({ value, source }) {
+    // We want source second so that we create a new object rather than modify source. We want 'value' last because
+    // the 'value' attached to the source is always a string, while the final value will have been converted by type.
+    // We could also use 'structuredClone', but Object.assign should be sufficient.
+    this.#results.push(Object.assign({}, source, { value }))
+  }
 
-    if (q.condition === undefined || evaluator.evalTruth(q.condition)) {
+  async #askQuestion(q) {
+    if (q.condition === undefined || this.#evalCondition(q.condition)) {
       // to avoid the 'MaxListenersExceededWarning', we have to create the rl inside the loop because everytime we do
       // our loop it ends up adding listeners for whatever reason.
       const rl = readline.createInterface({ input : this.#input, output : this.#output, terminal : false })
@@ -30,25 +35,13 @@ const Questioner = class {
         const it = rl[Symbol.asyncIterator]()
         const answer = (await it.next()).value.trim() // TODO: check that 'answer' is in the right form
 
-        const type = q.paramType || 'boolean'
+        const type = q.paramType || 'string'
         const verifyResult = verifyAnswerForm({ type, value : answer })
         if (verifyResult === true) {
-          if ((/bool(ean)?/i).test(type)) {
-            const value = !!(/^\s*(?:y(?:es)?|t(?:rue)?)\s*$/i).test(answer)
-            this.#values[q.parameter] = value
-          }
-          else if ((/int(?:eger)?/i).test(type)) {
-            this.#values[q.parameter] = parseInt(answer)
-          }
-          else if ((/float|numeric/i).test(type)) {
-            this.#values[q.parameter] = parseFloat(answer)
-          }
-          else { // treat as a string
-            this.#values[q.parameter] = answer
-          }
+          this.#addResult({ source : q, value : transformValue({ paramType : type, value : answer }) })
 
           if (q.mappings !== undefined) {
-            this.processMappings(q.mappings)
+            this.#processMappings(q.mappings)
           }
         }
         else { // the 'answer form' is invalid; let's try again
@@ -67,17 +60,27 @@ const Questioner = class {
     }
   }
 
+  #evalCondition(condition) {
+    const evaluator = new Evaluator({ parameters : this.values })
+    return evaluator.evalTruth(condition)
+  }
+
+  get(parameter) {
+    console.error(this.#results)
+    return this.#results.find((r) => r.parameter === parameter)?.value
+  }
+
   get interogationBundle() { return this.#interogationBundle } // TODO: clone
 
   set interogationBundle(ib) {
     const verifyMappings = (mappings) => {
       for (const { maps } of mappings) { // TODO: verify condition if present
-        for (const { source, target, value } of maps) {
-          if (target === undefined) {
-            throw createError.BadRequest("One of the mappings lacks a 'target' parameter.")
+        for (const { source, parameter, value } of maps) {
+          if (parameter === undefined) {
+            throw createError.BadRequest("One of the mappings lacks a 'parameter' parameter.")
           }
           if (source === undefined && value === undefined) {
-            throw createError.BadRequest(`Mapping for '${target}' must specify either 'source' or 'value'.`)
+            throw createError.BadRequest(`Mapping for '${parameter}' must specify either 'source' or 'value'.`)
           }
         }
       }
@@ -109,20 +112,19 @@ const Questioner = class {
     this.#interogationBundle = ib
   }
 
-  processMappings(mappings) {
+  #processMappings(mappings) {
     mappings.forEach((mapping) => {
-      const evaluator = new Evaluator({ parameters : this.#values })
-
-      if (mapping.condition === undefined || evaluator.evalTruth(mapping.condition)) {
+      if (mapping.condition === undefined || this.#evalCondition(mapping.condition)) {
         mapping.maps.forEach((map) => {
+          // having both source and value is not allowed and verified when the IB is loaded
           if (map.source !== undefined) {
-            this.#values[map.target] = this.#values[map.source]
+            this.#addResult({ source : map, value : transformValue(this.get(map.source)) })
           }
           else if (map.value !== undefined) {
-            this.#values[map.target] = map.value
+            this.#addResult({ source : map, value : transformValue(map) })
           }
           else { // this should already be verified up front, but for the sake of comopletness
-            throw new Error(`Mapping for '${map.target}' must specify either 'source' or 'value'.`)
+            throw new Error(`Mapping for '${map.parameter}' must specify either 'source' or 'value'.`)
           }
         })
       }
@@ -137,11 +139,35 @@ const Questioner = class {
     await this.#doQuestions()
 
     if (this.#interogationBundle.mappings !== undefined) {
-      this.processMappings(this.#interogationBundle.mappings)
+      this.#processMappings(this.#interogationBundle.mappings)
     }
   }
 
-  get values() { return this.#values } // TODO: clone
+  get results() { return structuredClone(this.#results) }
+
+  get values() {
+    return this.#results.reduce((acc, { parameter, value }) => { acc[parameter] = value; return acc }, {})
+  }
+}
+
+const transformValue = ({ paramType, value }) => {
+  if (paramType === undefined || paramType === 'string') { // most common case
+    return value
+  }
+  else if ((/bool(ean)?/i).test(paramType)) {
+    value = !!(/^\s*(?:y(?:es)?|t(?:rue)?)\s*$/i).test(value)
+  }
+  else if ((/int(?:eger)?/i).test(paramType)) {
+    value = parseInt(value)
+  }
+  else if ((/float|numeric/i).test(paramType)) {
+    value = parseFloat(value)
+  }
+  else { // this should be pre-screenned, but for the sake of robustness and completeness
+    throw createError.BadRequest(`Invalid parameter type '${paramType}' found while processing interogation bundle.`)
+  }
+
+  return value
 }
 
 const verifyAnswerForm = ({ output, type, value }) => {
