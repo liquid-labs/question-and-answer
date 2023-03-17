@@ -19,7 +19,9 @@ const Questioner = class {
     // We want source second so that we create a new object rather than modify source. We want 'value' last because
     // the 'value' attached to the source is always a string, while the final value will have been converted by type.
     // We could also use 'structuredClone', but Object.assign should be sufficient.
-    this.#results.push(Object.assign({}, source, { value }))
+    const result = Object.assign({}, source, { value })
+    delete result.mappings
+    this.#results.push(result)
   }
 
   async #askQuestion(q) {
@@ -66,8 +68,11 @@ const Questioner = class {
   }
 
   get(parameter) {
-    console.error(this.#results)
-    return this.#results.find((r) => r.parameter === parameter)?.value
+    return this.getResult(parameter)?.value
+  }
+
+  getResult(parameter) {
+    return this.#results.find((r) => r.parameter === parameter)
   }
 
   get interogationBundle() { return this.#interogationBundle } // TODO: clone

@@ -1,4 +1,4 @@
-/* global afterAll describe expect fail jest test */
+/* global afterAll beforeAll describe expect fail jest test */
 import * as fsPath from 'node:path'
 import { spawn } from 'node:child_process'
 
@@ -6,6 +6,7 @@ import { stdin } from 'mock-stdin'
 
 import {
   badParameterIB,
+  cookieParameterIB,
   noQuestionParameterIB,
   noQuestionPromptIB,
   simpleIB,
@@ -150,5 +151,29 @@ describe('Questioner', () => {
   ])('Will raise an exception on %s.', (desc, ib, exceptionRe) => {
     const questioner = new Questioner()
     expect(() => { questioner.interogationBundle = ib }).toThrow(exceptionRe)
+  })
+
+  describe('cookie parameters', () => {
+    const questioner = new Questioner({ input })
+
+    beforeAll(async() => {
+      questioner.interogationBundle = cookieParameterIB
+
+      const qPromise = questioner.question()
+      input.send('yes\n')
+      await qPromise
+    })
+
+    test('are passed from questions', () =>
+      expect(questioner.getResult('IS_CLIENT').handling).toBe('bundle')
+    )
+
+    test('are passed from question maps', () =>
+      expect(questioner.getResult('ORG_COMMON_NAME').handling).toBe('bundle')
+    )
+
+    test('are passed from question maps', () =>
+      expect(questioner.getResult('TARGET_DEMO').handling).toBe('bundle')
+    )
   })
 })
