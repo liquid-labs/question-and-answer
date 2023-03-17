@@ -5,62 +5,109 @@ import createError from 'http-errors'
 import { Evaluator } from '@liquid-labs/condition-eval'
 
 const Questioner = class {
+  #input
+  #output
   #interogationBundle = []
   #values = {}
 
-  async #doQuestions({ input = process.stdin, output = process.stdout }) {
-    for (const q of this.#interogationBundle.questions) {
-      const evaluator = new Evaluator({ parameters : this.#values })
+  constructor({ input = process.stdin, output = process.stdout } = {}) {
+    this.#input = input
+    this.#output = output
+  }
 
-      if (q.condition === undefined || evaluator.evalTruth(q.condition)) {
-        // to avoid the 'MaxListenersExceededWarning', we have to create the rl inside the loop because everytime we do
-        // our loop it ends up adding listeners for whatever reason.
-        const rl = readline.createInterface({ input, output, terminal : false })
+  async #askQuestion(q) {
+    const evaluator = new Evaluator({ parameters : this.#values })
 
-        try {
-          rl.setPrompt('\n' + q.prompt + ' ') // add newline for legibility
-          rl.prompt()
+    if (q.condition === undefined || evaluator.evalTruth(q.condition)) {
+      // to avoid the 'MaxListenersExceededWarning', we have to create the rl inside the loop because everytime we do
+      // our loop it ends up adding listeners for whatever reason.
+      const rl = readline.createInterface({ input : this.#input, output : this.#output, terminal : false })
 
-          const it = rl[Symbol.asyncIterator]()
-          const answer = await it.next() // TODO: check that 'answer' is in the right form
+      try {
+        rl.setPrompt('\n' + q.prompt + ' ') // add newline for legibility
+        rl.prompt()
 
-          if (q.paramType === undefined || (/bool(ean)?/i).test(q.paramType)) {
-            const value = !!(/^\s*(?:y(?:es)?|t(?:rue)?)\s*$/i).test(answer.value)
+        const it = rl[Symbol.asyncIterator]()
+        const answer = (await it.next()).value.trim() // TODO: check that 'answer' is in the right form
+
+        const type = q.paramType || 'boolean'
+        const verifyResult = verifyAnswerForm({ type, value : answer })
+        if (verifyResult === true) {
+          if ((/bool(ean)?/i).test(type)) {
+            const value = !!(/^\s*(?:y(?:es)?|t(?:rue)?)\s*$/i).test(answer)
             this.#values[q.parameter] = value
           }
-          else if ((/string|numeric|float|int(eger)?/i).test(q.paramType)) {
-            if ((/int(?:eger)?/i).test(q.paramType)) {
-              if (isNaN(answer.value)) {
-                throw createError.BadRequest(`Parameter '${q.parameter}' must be a numeric type.`)
-              }
-              this.#values[q.parameter] = parseInt(answer.value)
-            }
-            else if ((/float|numeric/i).test(q.paramType)) {
-              if (isNaN(answer.value) && (/-?\\d+\\.\\d+/).test(answer.value)) {
-                throw new Error(`Parameter '${q.parameter}' must be a (basic) floating point number.`)
-              }
-              this.#values[q.parameter] = parseFloat(answer.value)
-            }
-            else { // treat as a string
-              this.#values[q.parameter] = answer.value
-            }
+          else if ((/int(?:eger)?/i).test(type)) {
+            this.#values[q.parameter] = parseInt(answer)
           }
-          else {
-            throw new Error(`Unknown parameter type '${q.paramType}' in 'questions' section.`)
+          else if ((/float|numeric/i).test(type)) {
+            this.#values[q.parameter] = parseFloat(answer)
+          }
+          else { // treat as a string
+            this.#values[q.parameter] = answer
           }
 
           if (q.mappings !== undefined) {
             this.processMappings(q.mappings)
           }
-        } // try for rl
-        finally { rl.close() }
-      }
+        }
+        else { // the 'answer form' is invalid; let's try again
+          this.#output.write(verifyResult)
+          rl.close() // we'll create a new one
+          this.#askQuestion(q)
+        }
+      } // try for rl
+      finally { rl.close() }
+    }
+  }
+
+  async #doQuestions() {
+    for (const q of this.#interogationBundle.questions) {
+      await this.#askQuestion(q)
     }
   }
 
   get interogationBundle() { return this.#interogationBundle } // TODO: clone
 
-  set interogationBundle(ib) { this.#interogationBundle = ib }
+  set interogationBundle(ib) {
+    const verifyMappings = (mappings) => {
+      for (const { maps } of mappings) { // TODO: verify condition if present
+        for (const { source, target, value } of maps) {
+          if (target === undefined) {
+            throw createError.BadRequest("One of the mappings lacks a 'target' parameter.")
+          }
+          if (source === undefined && value === undefined) {
+            throw createError.BadRequest(`Mapping for '${target}' must specify either 'source' or 'value'.`)
+          }
+        }
+      }
+    }
+
+    ib.questions.forEach(({ mappings, parameter, paramType, prompt }, i) => {
+      // TODO: replace with some kind of JSON schema verification
+      if (parameter === undefined) {
+        throw createError.BadRequest(`Question ${i + 1} does not define a 'parameter'.`)
+      }
+      if (prompt === undefined) {
+        throw createError.BadRequest(`Question ${i + 1} does not define a 'prompt'.`)
+      }
+      if (paramType !== undefined && !paramType.match(/bool(?:ean)?|int(?:eger)?|float|numeric|string/)) {
+        throw createError.BadRequest(`Found unknown parameter type '${paramType}' in interogation bundle question ${i + 1}.`)
+      }
+
+      if (mappings) {
+        verifyMappings(mappings)
+      }
+
+      // TODO: verify conditionals...
+    })
+
+    if (ib.mappings) {
+      verifyMappings(ib.mappings)
+    }
+
+    this.#interogationBundle = ib
+  }
 
   processMappings(mappings) {
     mappings.forEach((mapping) => {
@@ -74,7 +121,7 @@ const Questioner = class {
           else if (map.value !== undefined) {
             this.#values[map.target] = map.value
           }
-          else {
+          else { // this should already be verified up front, but for the sake of comopletness
             throw new Error(`Mapping for '${map.target}' must specify either 'source' or 'value'.`)
           }
         })
@@ -82,12 +129,12 @@ const Questioner = class {
     })
   }
 
-  async question({ input, output } = {}) {
+  async question() {
     if (this.#interogationBundle === undefined) {
       throw createError.BadRequest("Must set 'interogation bundle' prior to invoking the questioning.")
     }
 
-    await this.#doQuestions({ input, output })
+    await this.#doQuestions()
 
     if (this.#interogationBundle.mappings !== undefined) {
       this.processMappings(this.#interogationBundle.mappings)
@@ -95,6 +142,22 @@ const Questioner = class {
   }
 
   get values() { return this.#values } // TODO: clone
+}
+
+const verifyAnswerForm = ({ output, type, value }) => {
+  if ((/int(?:eger)?/i).test(type)) {
+    if (isNaN(value) || !value.match(/^\d+$/)) {
+      return `'${value}' is not a valid integer.`
+    }
+  }
+  else if ((/float|numeric/i).test(type)) {
+    if (isNaN(value) || !value.match(/^-?\d+(?:\.\d+)?$/)) {
+      return `'${value}' is not a valid ${type}.`
+    }
+  }
+  // else it's a string
+
+  return true // we've passed the gauntlet
 }
 
 export { Questioner }

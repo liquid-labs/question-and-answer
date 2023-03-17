@@ -1,20 +1,35 @@
-/* global describe expect test */
+/* global afterAll describe expect fail jest test */
 import * as fsPath from 'node:path'
 import { spawn } from 'node:child_process'
 
 import { stdin } from 'mock-stdin'
 
-import { simpleIB, simpleMapIB, simpleLocalMapIB, DO_YOU_LIKE_MILK, IS_THE_COMPANY_THE_CLIENT, IS_THIS_THE_END } from './test-data'
+import {
+  badParameterIB,
+  noQuestionParameterIB,
+  noQuestionPromptIB,
+  simpleIB,
+  simpleMapIB,
+  simpleLocalMapIB,
+  DO_YOU_LIKE_MILK,
+  IS_THE_COMPANY_THE_CLIENT,
+  IS_THIS_THE_END,
+  WHATS_YOUR_FAVORITE_INT
+} from './test-data'
 import { Questioner } from '../questioner'
 
 const input = stdin()
 
+jest.setTimeout(1000) // tried to set this in 'beforeAll', but it failed; we try and restore value 'afterAll' tests.
+
 describe('Questioner', () => {
+  afterAll(() => jest.setTimeout(5000)) // restore default
+
   test('can process a simple boolean question', (done) => {
-    const questioner = new Questioner()
+    const questioner = new Questioner({ input })
     questioner.interogationBundle = simpleIB
 
-    questioner.question({ input }).then(() => {
+    questioner.question().then(() => {
       expect(questioner.values.IS_CLIENT).toBe(true)
       done()
     })
@@ -22,10 +37,10 @@ describe('Questioner', () => {
   })
 
   test.each([['yes', 'us'], ['no', 'them']])('Global map %s -> %s', (answer, mapping, done) => {
-    const questioner = new Questioner()
+    const questioner = new Questioner({ input })
     questioner.interogationBundle = simpleMapIB
 
-    questioner.question({ input }).then(() => {
+    questioner.question().then(() => {
       expect(questioner.values.ORG_COMMON_NAME).toBe(mapping)
       done()
     })
@@ -33,10 +48,10 @@ describe('Questioner', () => {
   })
 
   test.each([['yes', 'us'], ['no', 'them']])('Local map %s -> %s', (answer, mapping, done) => {
-    const questioner = new Questioner()
+    const questioner = new Questioner({ input })
     questioner.interogationBundle = simpleLocalMapIB
 
-    questioner.question({ input }).then(() => {
+    questioner.question().then(() => {
       expect(questioner.values.ORG_COMMON_NAME).toBe(mapping)
       done()
     })
@@ -48,7 +63,7 @@ describe('Questioner', () => {
     const testScriptPath = fsPath.join(__dirname, 'conditional-question.js')
 
     // You cannot (as of Node 19.3.0) listen for events on your own stdout, so we have to create a child process.
-    const child = spawn('node', [testScriptPath, answer])
+    const child = spawn('node', [testScriptPath])
 
     child.stdout.resume()
     child.stdout.once('data', (output) => {
@@ -77,7 +92,7 @@ describe('Questioner', () => {
     ['5.5', 'float', 5.5],
     ['6.6', 'numeric', 6.6]
   ])("Value '%s' type '%s' -> %p", (value, type, expected, done) => {
-    const questioner = new Questioner()
+    const questioner = new Questioner({ input })
     const ib = structuredClone(simpleIB)
     ib.questions[0].paramType = type
     questioner.interogationBundle = ib
@@ -87,5 +102,54 @@ describe('Questioner', () => {
       done()
     })
     input.send(value + '\n')
+  })
+
+  test('Will re-ask questions when answer form invalid', (done) => {
+    const testScriptPath = fsPath.join(__dirname, 'simple-int-question.js')
+
+    // You cannot (as of Node 19.3.0) listen for events on your own stdout, so we have to create a child process.
+    const child = spawn('node', [testScriptPath])
+
+    child.stdout.resume()
+    let count = 0
+    child.stdout.on('data', (output) => {
+      console.log('blah:', count, output.toString()) // DEBUG
+      try {
+        if (count === 0) {
+          expect(output.toString().trim()).toBe(WHATS_YOUR_FAVORITE_INT)
+        }
+        else if (count === 1 && output.toString().split('\n').length === 2) {
+          expect(output.toString().trim()).toMatch(/not a valid.+\n.+favorite int/m)
+          child.kill('SIGINT')
+          done()
+        }
+        else if (count === 1) {
+          expect(output.toString().trim()).toMatch(/not a valid/)
+        }
+        else if (count === 2) {
+          expect(output.toString().trim()).toBe(WHATS_YOUR_FAVORITE_INT)
+          child.kill('SIGINT')
+          done()
+        }
+      }
+      catch (e) {
+        child.kill('SIGINT')
+        fail(e)
+        done()
+      }
+
+      count += 1
+    })
+
+    child.stdin.write('not a number\n')
+  })
+
+  test.each([
+    ['an invalid parameter type', badParameterIB, /unknown parameter type/i],
+    ["no 'parameter' for question", noQuestionParameterIB, /does not define a 'parameter'/],
+    ["no 'prompt' for question", noQuestionPromptIB, /does not define a 'prompt'/]
+  ])('Will raise an exception on %s.', (desc, ib, exceptionRe) => {
+    const questioner = new Questioner()
+    expect(() => { questioner.interogationBundle = ib }).toThrow(exceptionRe)
   })
 })
