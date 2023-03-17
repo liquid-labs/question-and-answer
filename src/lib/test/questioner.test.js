@@ -20,7 +20,7 @@ import { Questioner } from '../questioner'
 
 const input = stdin()
 
-jest.setTimeout(1000) // tried to set this in 'beforeAll', but it failed; we try and restore value 'afterAll' tests.
+jest.setTimeout(750) // tried to set this in 'beforeAll', but it failed; we try and restore value 'afterAll' tests.
 
 describe('Questioner', () => {
   afterAll(() => jest.setTimeout(5000)) // restore default
@@ -36,23 +36,23 @@ describe('Questioner', () => {
     input.send('yes\n')
   })
 
-  test.each([['yes', 'us'], ['no', 'them']])('Global map %s -> %s', (answer, mapping, done) => {
+  test.each([['yes', 'us'], ['no', 'them']])('Global map %s -> %s', (answer, value, done) => {
     const questioner = new Questioner({ input })
     questioner.interogationBundle = simpleMapIB
 
     questioner.question().then(() => {
-      expect(questioner.values.ORG_COMMON_NAME).toBe(mapping)
+      expect(questioner.values.ORG_COMMON_NAME).toBe(value)
       done()
     })
     input.send(answer + '\n')
   })
 
-  test.each([['yes', 'us'], ['no', 'them']])('Local map %s -> %s', (answer, mapping, done) => {
+  test.each([['yes', 'us'], ['no', 'them']])('Local map %s -> %s', (answer, value, done) => {
     const questioner = new Questioner({ input })
     questioner.interogationBundle = simpleLocalMapIB
 
     questioner.question().then(() => {
-      expect(questioner.values.ORG_COMMON_NAME).toBe(mapping)
+      expect(questioner.values.ORG_COMMON_NAME).toBe(value)
       done()
     })
     input.send(answer + '\n')
@@ -113,7 +113,6 @@ describe('Questioner', () => {
     child.stdout.resume()
     let count = 0
     child.stdout.on('data', (output) => {
-      console.log('blah:', count, output.toString()) // DEBUG
       try {
         if (count === 0) {
           expect(output.toString().trim()).toBe(WHATS_YOUR_FAVORITE_INT)
