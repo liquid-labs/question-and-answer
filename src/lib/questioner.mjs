@@ -31,7 +31,8 @@ const Questioner = class {
         const answer = (await it.next()).value.trim() // TODO: check that 'answer' is in the right form
 
         const type = q.paramType || 'boolean'
-        if (verifyAnswerForm({ type, value: answer })) {
+        const verifyResult = verifyAnswerForm({ type, value: answer })
+        if (verifyResult === true) {
           if ((/bool(ean)?/i).test(type)) {
             const value = !!(/^\s*(?:y(?:es)?|t(?:rue)?)\s*$/i).test(answer)
             this.#values[q.parameter] = value
@@ -51,8 +52,8 @@ const Questioner = class {
           }
         }
         else { // the 'answer form' is invalid; let's try again
+          this.#output.write(verifyResult)
           rl.close() // we'll create a new one
-          this.#output.write(``)
           this.#askQuestion(q)
         }
       } // try for rl
@@ -105,16 +106,15 @@ const Questioner = class {
   get values() { return this.#values } // TODO: clone
 }
 
-const verifyAnswerForm = ({ type, value }) => {
+const verifyAnswerForm = ({ output, type, value }) => {
   if ((/int(?:eger)?/i).test(type)) {
     if (isNaN(value) || !value.match(/^\d+$/)) {
-      return false
+      return `'${value}' is not a valid integer.`
     }
   }
   else if ((/float|numeric/i).test(type)) {
     if (isNaN(value) || !value.match(/^-?\d+(?:\.\d+)?$/)) {
-      console.log('huh:', value, isNan(value))
-      return false
+      return `'${value}' is not a valid ${type}.`
     }
   }
   // else it's a string

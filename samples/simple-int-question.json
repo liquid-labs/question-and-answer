@@ -1,0 +1,5 @@
+{
+  "questions" : [
+    { "prompt" : "What's your favorite number?", "parameter" : "IS_CLIENT", "paramType" : "int" }
+  ]
+}

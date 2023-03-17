@@ -1,3 +1,10 @@
+const WHATS_YOUR_FAVORITE_INT = "What's your favorite int?"
+const simpleIntQuestionIB = {
+  questions : [
+    { prompt : WHATS_YOUR_FAVORITE_INT, parameter : 'IS_CLIENT', paramType : 'int' }
+  ]
+}
+
 const IS_THE_COMPANY_THE_CLIENT = 'Is the Company the client? (y=client/n=contractor)'
 const simpleIB = {
   questions : [
@@ -33,9 +40,11 @@ conditionalQuestionIB.questions.push({ condition : 'IS_CLIENT', prompt : DO_YOU_
 conditionalQuestionIB.questions.push({ prompt : IS_THIS_THE_END, parameter : 'IS_END' })
 
 export {
+  WHATS_YOUR_FAVORITE_INT,
   IS_THE_COMPANY_THE_CLIENT,
   DO_YOU_LIKE_MILK,
   IS_THIS_THE_END,
+  simpleIntQuestionIB,
   simpleIB,
   simpleMapIB,
   simpleLocalMapIB,

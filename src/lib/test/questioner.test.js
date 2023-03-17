@@ -1,10 +1,19 @@
-/* global afterAll beforeAll describe expect test */
+/* global afterAll beforeAll describe expect fail test */
 import * as fsPath from 'node:path'
 import { spawn } from 'node:child_process'
 
 import { stdin } from 'mock-stdin'
 
-import { simpleIB, simpleMapIB, simpleLocalMapIB, DO_YOU_LIKE_MILK, IS_THE_COMPANY_THE_CLIENT, IS_THIS_THE_END } from './test-data'
+import { 
+  simpleIB,
+  simpleIntQuestionIB,
+  simpleMapIB, 
+  simpleLocalMapIB, 
+  DO_YOU_LIKE_MILK, 
+  IS_THE_COMPANY_THE_CLIENT, 
+  IS_THIS_THE_END,
+  WHATS_YOUR_FAVORITE_INT
+} from './test-data'
 import { Questioner } from '../questioner'
 
 const input = stdin()
@@ -52,7 +61,7 @@ describe('Questioner', () => {
     const testScriptPath = fsPath.join(__dirname, 'conditional-question.js')
 
     // You cannot (as of Node 19.3.0) listen for events on your own stdout, so we have to create a child process.
-    const child = spawn('node', [testScriptPath, answer])
+    const child = spawn('node', [testScriptPath])
 
     child.stdout.resume()
     child.stdout.once('data', (output) => {
@@ -91,5 +100,43 @@ describe('Questioner', () => {
       done()
     })
     input.send(value + '\n')
+  })
+
+  test('Will re-ask questions when answer form invalid', (done) => {
+    const testScriptPath = fsPath.join(__dirname, 'simple-int-question.js')
+
+    // You cannot (as of Node 19.3.0) listen for events on your own stdout, so we have to create a child process.
+    const child = spawn('node', [testScriptPath])
+
+    child.stdout.resume()
+    let count = 0
+    child.stdout.on('data', (output) => {
+      try {
+        if (count === 0) {
+          expect(output.toString().trim()).toBe(WHATS_YOUR_FAVORITE_INT)
+        }
+        else if (count === 1 && output.toString().split('\n').length == 2) {
+          expect(output.toString().trim()).toMatch(new RegExp(`not a valid.+\n.+favorite int`, 'm'))
+          child.kill('SIGINT')
+          done()
+        }
+        else if (count === 1) {
+          expect(output.toString().trim()).toMatch(/not a valid/)
+        }
+        else if (count === 2) {
+          expect(output.toString().trim()).toBe(WHATS_YOUR_FAVORITE_INT)
+          child.kill('SIGINT')
+          done()
+        }
+      }
+      catch (e) {
+        child.kill('SIGINT')
+        throw(e)
+      }
+      
+      count += 1
+    })
+
+    child.stdin.write('not a number\n')
   })
 })
