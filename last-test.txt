@@ -1,0 +1,45 @@
+
+Is the Company the client? (y=client/n=contractor) 
+Is the Company the client? (y=client/n=contractor) 
+Is the Company the client? (y=client/n=contractor) 
+Is the Company the client? (y=client/n=contractor) 
+Is the Company the client? (y=client/n=contractor) 
+Is the Company the client? (y=client/n=contractor) 
+Is the Company the client? (y=client/n=contractor) 
+Is the Company the client? (y=client/n=contractor) 
+Is the Company the client? (y=client/n=contractor) 
+Is the Company the client? (y=client/n=contractor) 
+Is the Company the client? (y=client/n=contractor) PASS test-staging/test/questioner.test.js
+  Questioner
+    ✓ can process a simple boolean question (3 ms)
+    ✓ Global map yes -> us (1 ms)
+    ✓ Global map no -> them (1 ms)
+    ✓ Local map yes -> us (1 ms)
+    ✓ Local map no -> them
+    ✓ Conditional question yes -> Do you like milk? (87 ms)
+    ✓ Conditional question no -> Is this the end? (57 ms)
+    ✓ Value 'true' type 'boolean' -> true (1 ms)
+    ✓ Value 'true' type 'bool' -> true
+    ✓ Value 'true' type 'string' -> "true" (1 ms)
+    ✓ Value '5' type 'integer' -> 5
+    ✓ Value '5.5' type 'float' -> 5.5 (1 ms)
+    ✓ Value '6.6' type 'numeric' -> 6.6
+    ✓ Will re-ask questions when answer form invalid (63 ms)
+    ✓ Will raise an exception on an invalid parameter type. (13 ms)
+    ✓ Will raise an exception on no 'parameter' for question.
+    ✓ Will raise an exception on no 'prompt' for question.
+
+-----------------|---------|----------|---------|---------|----------------------------------------------
+File             | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s                            
+-----------------|---------|----------|---------|---------|----------------------------------------------
+All files        |   90.11 |    75.28 |      84 |    87.5 |                                              
+ lib             |   88.11 |    75.28 |      84 |   84.69 |                                              
+  questioner.mjs |   88.11 |    75.28 |      84 |   84.69 | 26,48-50,69-73,80,83,121,127,146,167,176,181 
+ lib/test        |     100 |      100 |     100 |     100 |                                              
+  test-data.js   |     100 |      100 |     100 |     100 |                                              
+-----------------|---------|----------|---------|---------|----------------------------------------------
+Test Suites: 1 passed, 1 total
+Tests:       17 passed, 17 total
+Snapshots:   0 total
+Time:        0.653 s, estimated 1 s
+Ran all test suites matching /.\/test-staging/i.
