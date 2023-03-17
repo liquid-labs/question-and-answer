@@ -1,6 +1,6 @@
 {
   "name": "@liquid-labs/question-and-answer",
-  "version": "1.0.0-alpha.1",
+  "version": "1.0.0-alpha.2",
   "description": "",
   "main": "dist/question-and-answer.js",
   "module": "dist/question-and-answer.mjs",
