@@ -80,12 +80,12 @@ const Questioner = class {
   set interogationBundle(ib) {
     const verifyMappings = (mappings) => {
       for (const { maps } of mappings) { // TODO: verify condition if present
-        for (const { source, parameter, value } of maps) {
+        for (const { parameter, source, value } of maps) {
           if (parameter === undefined) {
             throw createError.BadRequest("One of the mappings lacks a 'parameter' parameter.")
           }
           if (source === undefined && value === undefined) {
-            throw createError.BadRequest(`Mapping for '${parameter}' must specify either 'source' or 'value'.`)
+            throw createError.BadRequest(`Mapping for '${parameter}' must specify one of 'source' or 'value'.`)
           }
         }
       }
@@ -123,7 +123,19 @@ const Questioner = class {
         mapping.maps.forEach((map) => {
           // having both source and value is not allowed and verified when the IB is loaded
           if (map.source !== undefined) {
-            this.#addResult({ source : map, value : transformValue(this.get(map.source)) })
+            const evaluator = new Evaluator({ parameters : this.values })
+            let value
+            if (map.paramType.match(/bool(?:ean)?/i)) {
+              value = evaluator.evalTruth(map.source)
+            }
+            else if (map.paramType === undefined || map.paramType === 'string') {
+              throw createError.BadRequest(`Cannot map parameter '${map.parameter}' of type 'string' to a 'source' value. Must boolean or some numeric type.`)
+            }
+            else {
+              value = evaluator.evalNumber(map.source)
+              value = transformValue({ paramType : map.paramType, value })
+            }
+            this.#addResult({ source : map, value })
           }
           else if (map.value !== undefined) {
             this.#addResult({ source : map, value : transformValue(map) })

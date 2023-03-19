@@ -12,6 +12,7 @@ import {
   simpleIB,
   simpleMapIB,
   simpleLocalMapIB,
+  sourceMappingIB,
   DO_YOU_LIKE_MILK,
   IS_THE_COMPANY_THE_CLIENT,
   IS_THIS_THE_END,
@@ -37,15 +38,32 @@ describe('Questioner', () => {
     input.send('yes\n')
   })
 
-  test.each([['yes', 'us'], ['no', 'them']])('Global map %s -> %s', (answer, value, done) => {
-    const questioner = new Questioner({ input })
-    questioner.interogationBundle = simpleMapIB
+  describe('Global mappings', () => {
+    test.each([['yes', 'us'], ['no', 'them']])('value map %s -> %s', (answer, value, done) => {
+      const questioner = new Questioner({ input })
+      questioner.interogationBundle = simpleMapIB
 
-    questioner.question().then(() => {
-      expect(questioner.values.ORG_COMMON_NAME).toBe(value)
-      done()
+      questioner.question().then(() => {
+        expect(questioner.values.ORG_COMMON_NAME).toBe(value)
+        done()
+      })
+      input.send(answer + '\n')
     })
-    input.send(answer + '\n')
+
+    test.each([
+      ['1', 'FAVE_DIFF', 2],
+      ['1', 'IS_FAVE_NOT_ZERO', true],
+      ['0', 'IS_FAVE_NOT_ZERO', false]
+    ])("source map 'FAVE_INT'=%s, yields '%s'=%s'", (faveInt, parameter, value, done) => {
+      const questioner = new Questioner({ input })
+      questioner.interogationBundle = sourceMappingIB
+
+      questioner.question().then(() => {
+        expect(questioner.values[parameter]).toBe(value)
+        done()
+      })
+      input.send(faveInt + '\n')
+    })
   })
 
   test.each([['yes', 'us'], ['no', 'them']])('Local map %s -> %s', (answer, value, done) => {
