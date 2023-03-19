@@ -31,13 +31,34 @@ const Questioner = class {
       const rl = readline.createInterface({ input : this.#input, output : this.#output, terminal : false })
 
       try {
-        rl.setPrompt('\n' + q.prompt + ' ') // add newline for legibility
+        const type = q.paramType || 'string'
+        let currValue = this.get(q.parameter)
+        if (!verifyAnswerForm({ type, value: currValue })) {
+          currValue = undefined
+        }
+
+        let prompt = '\n' + q.prompt + ' '
+        if (currValue !== undefined) {
+          if (q.paramType?.match(/bool(?:ean)?/i)) {
+            prompt += `[` + (currValue === true ? 'Y/n' : 'y/N|-') + '] '
+          }
+          else {
+            prompt += `[${currValue}|-] `
+          }
+        }
+        else if (q.paramType?.match(/bool(?:ean)?/i)) {
+          prompt += '[y/n] '
+        }
+
+        rl.setPrompt(prompt) // add newline for legibility
         rl.prompt()
 
         const it = rl[Symbol.asyncIterator]()
-        const answer = (await it.next()).value.trim() // TODO: check that 'answer' is in the right form
-
-        const type = q.paramType || 'string'
+        let answer = (await it.next()).value.trim() || currValue || ''
+        if (answer === '-') {
+          answer = undefined
+        }
+        
         const verifyResult = verifyAnswerForm({ type, value : answer })
         if (verifyResult === true) {
           this.#addResult({ source : q, value : transformValue({ paramType : type, value : answer }) })
