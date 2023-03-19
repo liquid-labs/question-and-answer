@@ -1,7 +1,7 @@
 const WHATS_YOUR_FAVORITE_INT = "What's your favorite int?"
 const simpleIntQuestionIB = {
   questions : [
-    { prompt : WHATS_YOUR_FAVORITE_INT, parameter : 'IS_CLIENT', paramType : 'int' }
+    { prompt : WHATS_YOUR_FAVORITE_INT, parameter : 'FAVE_INT', paramType : 'int' }
   ]
 }
 
@@ -32,6 +32,24 @@ simpleMapIB.mappings = structuredClone(commonMapping)
 
 const simpleLocalMapIB = structuredClone(simpleIB)
 simpleLocalMapIB.questions[0].mappings = structuredClone(commonMapping)
+
+const sourceMappingIB = structuredClone(simpleIntQuestionIB)
+sourceMappingIB.questions[0].mappings = [ // we would do this as a question, but to get more than one input line, we
+  // have to do the spawn process trick, but we want to keeep this in-process so we can check the values
+  {
+    maps : [
+      { parameter : 'HATED_INT', source : '0 - FAVE_INT', paramType : 'int' }
+    ]
+  }
+]
+sourceMappingIB.mappings = [
+  {
+    maps : [
+      { parameter : 'FAVE_DIFF', source : 'FAVE_INT - HATED_INT', paramType : 'int' },
+      { parameter : 'IS_FAVE_NOT_ZERO', source : 'FAVE_INT', paramType : 'bool' }
+    ]
+  }
+]
 
 const cookieParameterIB = structuredClone(simpleIB)
 cookieParameterIB.mappings = structuredClone(commonMapping)
@@ -76,6 +94,7 @@ export {
   simpleIB,
   simpleMapIB,
   simpleLocalMapIB,
+  sourceMappingIB,
   conditionalQuestionIB,
   badParameterIB,
   noQuestionParameterIB,
