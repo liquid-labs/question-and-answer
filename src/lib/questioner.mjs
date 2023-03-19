@@ -1,3 +1,21 @@
+/**
+ * Exports `Questioner` object used to interogate the user and generate results based on answers and data mappings.
+ * 
+ * ## When are questions asked?
+ * 
+ * A question may have a `condition` attached to it. When the condition, the question (and any question-local mappngs) 
+ * are skipped entirely. By default, the question is skipped for the user if the `parameter` already has a value or is 
+ * "[positively blank](#positively-blank)", though in this case the question-local mappings are executed (so long as 
+ * the condition passes).
+ * 
+ * ## Positively blank
+ * 
+ * An answer or value of '-' is interpretted to mean 'nullify (or blank) the value. This allows the user to un-set an 
+ * answer, as when the value is already set and the answer has a default. In that case, just hitting return would 
+ * result in the value staying as the default. To un-set the value, the user would answer '-'.
+ * 
+ * Note that a blank answer with no default is also blank. You can, but don't have to use the '-'.
+ */
 import * as readline from 'node:readline'
 
 import createError from 'http-errors'
@@ -8,11 +26,13 @@ const Questioner = class {
   #input
   #output
   #interogationBundle = []
+  #noSkipDefined
   #results = []
 
-  constructor({ input = process.stdin, output = process.stdout } = {}) {
+  constructor({ input = process.stdin, output = process.stdout, noSkipDefined = false } = {}) {
     this.#input = input
     this.#output = output
+    this.#noSkipDefined = noSkipDefined
   }
 
   #addResult({ value, source }) {
@@ -25,7 +45,14 @@ const Questioner = class {
   }
 
   async #askQuestion(q) {
-    if (q.condition === undefined || this.#evalCondition(q.condition)) {
+    const conditionPass = q.condition === undefined || this.#evalCondition(q.condition) === true
+    if (conditionPass === false) return
+
+    const definedSkip = 
+      // v global no skip               v question-scoped no skip  v otherwise, skip if we has it
+      (this.#noSkipDefined !== true && q.noSkipDefined !== true && this.has(q.parameter) === true)
+    
+    if (definedSkip === false) {
       // to avoid the 'MaxListenersExceededWarning', we have to create the rl inside the loop because everytime we do
       // our loop it ends up adding listeners for whatever reason.
       const rl = readline.createInterface({ input : this.#input, output : this.#output, terminal : false })
@@ -75,6 +102,9 @@ const Questioner = class {
       } // try for rl
       finally { rl.close() }
     }
+    else if (q.mappings !== undefined) {
+      this.#processMappings(q.mappings)
+    }
   }
 
   async #doQuestions() {
@@ -94,6 +124,10 @@ const Questioner = class {
 
   getResult(parameter) {
     return this.#results.find((r) => r.parameter === parameter)
+  }
+
+  has(parameter) {
+    return this.getResult(parameter) !== undefined
   }
 
   get interogationBundle() { return this.#interogationBundle } // TODO: clone

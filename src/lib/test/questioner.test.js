@@ -27,6 +27,30 @@ jest.setTimeout(750) // tried to set this in 'beforeAll', but it failed; we try 
 describe('Questioner', () => {
   afterAll(() => jest.setTimeout(5000)) // restore default
 
+  describe('QnA flow', () => {
+    test('skips questions with a pre-existing parameter value', () => {
+      const testScriptPath = fsPath.join(__dirname, 'double-question.js')
+
+      // You cannot (as of Node 19.3.0) listen for events on your own stdout, so we have to create a child process.
+      const child = spawn('node', [testScriptPath])
+
+      child.stdout.resume()
+      child.stdout.once('data', (output) => {
+        expect(output.toString().trim()).toBe(IS_THE_COMPANY_THE_CLIENT + ' [y/n]')
+
+        child.stdout.once('data', (output) => {
+          expect(output.toString().trim()).toBe('Done? [y/n]')
+          child.stdin.write('yes\n')
+
+          child.kill('SIGINT')
+          done()
+        })
+      })
+
+      child.stdin.write('yes\n')
+    })    
+  })
+
   test('can process a simple boolean question', (done) => {
     const questioner = new Questioner({ input })
     questioner.interogationBundle = simpleIB
