@@ -33,14 +33,14 @@ const Questioner = class {
       try {
         const type = q.paramType || 'string'
         let currValue = this.get(q.parameter)
-        if (!verifyAnswerForm({ type, value: currValue })) {
+        if (!verifyAnswerForm({ type, value : currValue })) {
           currValue = undefined
         }
 
         let prompt = '\n' + q.prompt + ' '
         if (currValue !== undefined) {
           if (q.paramType?.match(/bool(?:ean)?/i)) {
-            prompt += `[` + (currValue === true ? 'Y/n' : 'y/N|-') + '] '
+            prompt += '[' + (currValue === true ? 'Y/n' : 'y/N|-') + '] '
           }
           else {
             prompt += `[${currValue}|-] `
@@ -58,7 +58,7 @@ const Questioner = class {
         if (answer === '-') {
           answer = undefined
         }
-        
+
         const verifyResult = verifyAnswerForm({ type, value : answer })
         if (verifyResult === true) {
           this.#addResult({ source : q, value : transformValue({ paramType : type, value : answer }) })

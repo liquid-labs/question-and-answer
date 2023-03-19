@@ -86,7 +86,7 @@ describe('Questioner', () => {
 
     child.stdout.resume()
     child.stdout.once('data', (output) => {
-      expect(output.toString().trim()).toBe(IS_THE_COMPANY_THE_CLIENT)
+      expect(output.toString().trim()).toBe(IS_THE_COMPANY_THE_CLIENT + ' [y/n]')
 
       child.stdout.once('data', (output) => {
         expect(output.toString().trim()).toBe(followup)
