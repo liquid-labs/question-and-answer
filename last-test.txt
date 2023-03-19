@@ -1,0 +1,57 @@
+
+Is the Company the client? (y=client/n=contractor) 
+Is the Company the client? (y=client/n=contractor) 
+Is the Company the client? (y=client/n=contractor) 
+What's your favorite int? 
+What's your favorite int? 
+What's your favorite int? 
+Is the Company the client? (y=client/n=contractor) 
+Is the Company the client? (y=client/n=contractor) 
+Is the Company the client? (y=client/n=contractor) 
+Is the Company the client? (y=client/n=contractor) 
+Is the Company the client? (y=client/n=contractor) 
+Is the Company the client? (y=client/n=contractor) 
+Is the Company the client? (y=client/n=contractor) 
+Is the Company the client? (y=client/n=contractor) 
+Is the Company the client? (y=client/n=contractor) PASS test-staging/test/questioner.test.js
+  Questioner
+    ✓ can process a simple boolean question (4 ms)
+    ✓ Local map yes -> us
+    ✓ Local map no -> them
+    ✓ Conditional question yes -> Do you like milk? (65 ms)
+    ✓ Conditional question no -> Is this the end? (60 ms)
+    ✓ Value 'true' type 'boolean' -> true (1 ms)
+    ✓ Value 'true' type 'bool' -> true
+    ✓ Value 'true' type 'string' -> "true"
+    ✓ Value '5' type 'integer' -> 5
+    ✓ Value '5.5' type 'float' -> 5.5 (1 ms)
+    ✓ Value '6.6' type 'numeric' -> 6.6
+    ✓ Will re-ask questions when answer form invalid (55 ms)
+    ✓ Will raise an exception on an invalid parameter type. (19 ms)
+    ✓ Will raise an exception on no 'parameter' for question.
+    ✓ Will raise an exception on no 'prompt' for question. (1 ms)
+    Global mappings
+      ✓ value map yes -> us (1 ms)
+      ✓ value map no -> them (1 ms)
+      ✓ source map 'FAVE_INT'=1, yields 'FAVE_DIFF'=2' (1 ms)
+      ✓ source map 'FAVE_INT'=1, yields 'IS_FAVE_NOT_ZERO'=true'
+      ✓ source map 'FAVE_INT'=0, yields 'IS_FAVE_NOT_ZERO'=false' (1 ms)
+    cookie parameters
+      ✓ are passed from questions (1 ms)
+      ✓ are passed from question maps
+      ✓ are passed from question maps
+
+-----------------|---------|----------|---------|---------|----------------------------------------------
+File             | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s                            
+-----------------|---------|----------|---------|---------|----------------------------------------------
+All files        |   92.26 |    76.84 |   88.46 |      90 |                                              
+ lib             |   90.13 |    76.84 |   88.46 |   86.91 |                                              
+  questioner.mjs |   90.13 |    76.84 |   88.46 |   86.91 | 28,50-52,71,78,85,88,132,144,163,184,193,198 
+ lib/test        |     100 |      100 |     100 |     100 |                                              
+  test-data.js   |     100 |      100 |     100 |     100 |                                              
+-----------------|---------|----------|---------|---------|----------------------------------------------
+Test Suites: 1 passed, 1 total
+Tests:       23 passed, 23 total
+Snapshots:   0 total
+Time:        0.523 s, estimated 1 s
+Ran all test suites matching /.\/test-staging/i.
