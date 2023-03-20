@@ -28,7 +28,7 @@ describe('Questioner', () => {
   afterAll(() => jest.setTimeout(5000)) // restore default
 
   describe('QnA flow', () => {
-    test('skips questions with a pre-existing parameter value', () => {
+    test('skips questions with a pre-existing parameter value', (done) => {
       const testScriptPath = fsPath.join(__dirname, 'double-question.js')
 
       // You cannot (as of Node 19.3.0) listen for events on your own stdout, so we have to create a child process.
@@ -48,11 +48,41 @@ describe('Questioner', () => {
       })
 
       child.stdin.write('yes\n')
-    })    
+    })
+
+    test('processes question-local maps when question is deined-skipped', (done) => {
+      const questioner = new Questioner({ initialParameters: { IS_CLIENT: true }})
+      questioner.interogationBundle = simpleLocalMapIB
+      
+      questioner.question().then(() => {
+        try {
+          expect(questioner.get('IS_CLIENT')).toBe(true)
+          expect(questioner.get('ORG_COMMON_NAME')).toBe('us') // this is the mapped value
+        }
+        finally { done() }
+      })
+    })
+
+    test('skips question-local maps when question is condition-skipped', (done) => {
+      const ib = structuredClone(simpleLocalMapIB)
+      ib.questions[0].condition="FOO"
+      const initialParameters = { FOO: false }
+
+      const questioner = new Questioner({ initialParameters })
+      questioner.interogationBundle = ib
+      
+      questioner.question().then(() => {
+        try {
+          expect(questioner.get('IS_CLIENT')).toBe(undefined)
+          expect(questioner.get('ORG_COMMON_NAME')).toBe(undefined) // this is the mapped value
+        }
+        finally { done() }
+      })
+    })
   })
 
   test('can process a simple boolean question', (done) => {
-    const questioner = new Questioner({ input })
+    const questioner = new Questioner()
     questioner.interogationBundle = simpleIB
 
     questioner.question().then(() => {

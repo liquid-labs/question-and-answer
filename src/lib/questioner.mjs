@@ -23,15 +23,22 @@ import createError from 'http-errors'
 import { Evaluator } from '@liquid-labs/condition-eval'
 
 const Questioner = class {
+  #initialParameters
   #input
   #output
   #interogationBundle = []
   #noSkipDefined
   #results = []
 
-  constructor({ input = process.stdin, output = process.stdout, noSkipDefined = false } = {}) {
+  constructor({ 
+    input = process.stdin,
+    output = process.stdout,
+    initialParameters = {},
+    noSkipDefined = false
+  } = {}) {
     this.#input = input
     this.#output = output
+    this.#initialParameters = initialParameters
     this.#noSkipDefined = noSkipDefined
   }
 
@@ -114,12 +121,16 @@ const Questioner = class {
   }
 
   #evalCondition(condition) {
-    const evaluator = new Evaluator({ parameters : this.values })
+    const evaluator = new Evaluator({ parameters : this.#evalParams() })
     return evaluator.evalTruth(condition)
   }
 
+  #evalParams() {
+    return Object.assign(this.#initialParameters, this.values)
+  }
+
   get(parameter) {
-    return this.getResult(parameter)?.value
+    return this.getResult(parameter)?.value || this.#initialParameters[parameter]
   }
 
   getResult(parameter) {
@@ -127,7 +138,7 @@ const Questioner = class {
   }
 
   has(parameter) {
-    return this.getResult(parameter) !== undefined
+    return this.getResult(parameter) !== undefined || (parameter in this.#initialParameters)
   }
 
   get interogationBundle() { return this.#interogationBundle } // TODO: clone
@@ -178,7 +189,7 @@ const Questioner = class {
         mapping.maps.forEach((map) => {
           // having both source and value is not allowed and verified when the IB is loaded
           if (map.source !== undefined) {
-            const evaluator = new Evaluator({ parameters : this.values })
+            const evaluator = new Evaluator({ parameters : this.#evalParams() })
             let value
             if (map.paramType.match(/bool(?:ean)?/i)) {
               value = evaluator.evalTruth(map.source)
