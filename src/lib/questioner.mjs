@@ -21,6 +21,7 @@ import * as readline from 'node:readline'
 import createError from 'http-errors'
 
 import { Evaluator } from '@liquid-labs/condition-eval'
+import { formatTerminalText } from '@liquid-labs/terminal-text'
 
 const Questioner = class {
   #initialParameters
@@ -75,7 +76,7 @@ const Questioner = class {
           currValue = undefined
         }
 
-        let prompt = '\n' + q.prompt + ' '
+        let prompt = '\n' + formatTerminalText(q.prompt) + ' '
         if (currValue !== undefined) {
           if (q.paramType?.match(/bool(?:ean)?/i)) {
             prompt += '[' + (currValue === true ? 'Y/n' : 'y/N|-') + '] '

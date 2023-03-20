@@ -6,13 +6,12 @@ const filePath = process.argv[2]
 const envFile = process.argv[3];
 
 (async () => {
-  const ib = JSON.parse(await fs.readFile(filePath, { encoding: 'utf8' }))
+  const interrogationBundle = JSON.parse(await fs.readFile(filePath, { encoding: 'utf8' }))
   const initialParameters = envFile === undefined
     ? {}
     : JSON.parse(await fs.readFile(envFile, { encoding: 'utf8' }))
 
-  const questioner = new Questioner({ initialParameters })
-  questioner.interrogationBundle = ib
+  const questioner = new Questioner({ initialParameters, interrogationBundle })
   await questioner.question()
 
   console.log(questioner.values)
