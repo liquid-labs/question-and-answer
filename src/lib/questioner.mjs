@@ -26,7 +26,7 @@ const Questioner = class {
   #initialParameters
   #input
   #output
-  #interogationBundle = []
+  #interrogationBundle = []
   #noSkipDefined
   #results = []
 
@@ -39,7 +39,7 @@ const Questioner = class {
   } = {}) {
     this.#input = input
     this.#output = output
-    this.#interogationBundle = interrogationBundle
+    this.#interrogationBundle = interrogationBundle
     this.#initialParameters = initialParameters
     this.#noSkipDefined = noSkipDefined
 
@@ -119,7 +119,7 @@ const Questioner = class {
   }
 
   async #doQuestions() {
-    for (const q of this.#interogationBundle.questions) {
+    for (const q of this.#interrogationBundle.questions) {
       await this.#askQuestion(q)
     }
   }
@@ -145,7 +145,7 @@ const Questioner = class {
     return this.getResult(parameter) !== undefined || (parameter in this.#initialParameters)
   }
 
-  get interogationBundle() { return this.#interogationBundle } // TODO: clone
+  get interrogationBundle() { return this.#interrogationBundle } // TODO: clone
 
   #processMappings(mappings) {
     mappings.forEach((mapping) => {
@@ -179,14 +179,14 @@ const Questioner = class {
   }
 
   async question() {
-    if (this.#interogationBundle === undefined) {
-      throw createError.BadRequest("Must set 'interogation bundle' prior to invoking the questioning.")
+    if (this.#interrogationBundle === undefined) {
+      throw createError.BadRequest("Must set 'interrogation bundle' prior to invoking the questioning.")
     }
 
     await this.#doQuestions()
 
-    if (this.#interogationBundle.mappings !== undefined) {
-      this.#processMappings(this.#interogationBundle.mappings)
+    if (this.#interrogationBundle.mappings !== undefined) {
+      this.#processMappings(this.#interrogationBundle.mappings)
     }
   }
 
@@ -210,7 +210,7 @@ const Questioner = class {
       }
     }
 
-    const ib = this.#interogationBundle
+    const ib = this.#interrogationBundle
 
     ib.questions.forEach(({ mappings, parameter, paramType, prompt }, i) => {
       // TODO: replace with some kind of JSON schema verification
@@ -221,7 +221,7 @@ const Questioner = class {
         throw createError.BadRequest(`Question ${i + 1} does not define a 'prompt'.`)
       }
       if (paramType !== undefined && !paramType.match(/bool(?:ean)?|int(?:eger)?|float|numeric|string/)) {
-        throw createError.BadRequest(`Found unknown parameter type '${paramType}' in interogation bundle question ${i + 1}.`)
+        throw createError.BadRequest(`Found unknown parameter type '${paramType}' in interrogation bundle question ${i + 1}.`)
       }
 
       if (mappings) {
@@ -251,7 +251,7 @@ const transformValue = ({ paramType, value }) => {
     value = parseFloat(value)
   }
   else { // this should be pre-screenned, but for the sake of robustness and completeness
-    throw createError.BadRequest(`Invalid parameter type '${paramType}' found while processing interogation bundle.`)
+    throw createError.BadRequest(`Invalid parameter type '${paramType}' found while processing interrogation bundle.`)
   }
 
   return value
