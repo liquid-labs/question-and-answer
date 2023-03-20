@@ -61,8 +61,8 @@ cookieParameterIB.mappings[0].maps[0].handling = 'bundle'
 cookieParameterIB.questions[0].mappings[0].maps[0].handling = 'bundle'
 
 const doubleQuestionIB = structuredClone(simpleIB)
-doubleQuestionIB.questions.push({ prompt : "Really?", parameter : 'IS_CLIENT', paramType : 'bool' })
-doubleQuestionIB.questions.push({ prompt : "Done?", parameter : 'DONE', paramType : 'bool' })
+doubleQuestionIB.questions.push({ prompt : 'Really?', parameter : 'IS_CLIENT', paramType : 'bool' })
+doubleQuestionIB.questions.push({ prompt : 'Done?', parameter : 'DONE', paramType : 'bool' })
 
 const DO_YOU_LIKE_MILK = 'Do you like milk?'
 const IS_THIS_THE_END = 'Is this the end?'

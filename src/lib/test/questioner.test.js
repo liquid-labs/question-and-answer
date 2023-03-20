@@ -51,9 +51,9 @@ describe('Questioner', () => {
     })
 
     test('processes question-local maps when question is deined-skipped', (done) => {
-      const questioner = new Questioner({ initialParameters: { IS_CLIENT: true }})
+      const questioner = new Questioner({ initialParameters : { IS_CLIENT : true } })
       questioner.interogationBundle = simpleLocalMapIB
-      
+
       questioner.question().then(() => {
         try {
           expect(questioner.get('IS_CLIENT')).toBe(true)
@@ -65,12 +65,12 @@ describe('Questioner', () => {
 
     test('skips question-local maps when question is condition-skipped', (done) => {
       const ib = structuredClone(simpleLocalMapIB)
-      ib.questions[0].condition="FOO"
-      const initialParameters = { FOO: false }
+      ib.questions[0].condition = 'FOO'
+      const initialParameters = { FOO : false }
 
       const questioner = new Questioner({ initialParameters })
       questioner.interogationBundle = ib
-      
+
       questioner.question().then(() => {
         try {
           expect(questioner.get('IS_CLIENT')).toBe(undefined)
