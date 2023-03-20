@@ -51,9 +51,9 @@ describe('Questioner', () => {
     })
 
     test('processes question-local maps when question is deined-skipped', (done) => {
-      const questioner = new Questioner({ 
-        initialParameters : { IS_CLIENT : true }, 
-        interrogationBundle: simpleLocalMapIB 
+      const questioner = new Questioner({
+        initialParameters   : { IS_CLIENT : true },
+        interrogationBundle : simpleLocalMapIB
       })
 
       questioner.question().then(() => {
@@ -70,7 +70,7 @@ describe('Questioner', () => {
       ib.questions[0].condition = 'FOO'
       const initialParameters = { FOO : false }
 
-      const questioner = new Questioner({ initialParameters, interrogationBundle: ib })
+      const questioner = new Questioner({ initialParameters, interrogationBundle : ib })
 
       questioner.question().then(() => {
         try {
@@ -83,7 +83,7 @@ describe('Questioner', () => {
   })
 
   test('can process a simple boolean question', (done) => {
-    const questioner = new Questioner({ interrogationBundle: simpleIB })
+    const questioner = new Questioner({ interrogationBundle : simpleIB })
 
     questioner.question().then(() => {
       expect(questioner.values.IS_CLIENT).toBe(true)
@@ -94,7 +94,7 @@ describe('Questioner', () => {
 
   describe('Global mappings', () => {
     test.each([['yes', 'us'], ['no', 'them']])('value map %s -> %s', (answer, value, done) => {
-      const questioner = new Questioner({ interrogationBundle: simpleMapIB })
+      const questioner = new Questioner({ interrogationBundle : simpleMapIB })
 
       questioner.question().then(() => {
         expect(questioner.values.ORG_COMMON_NAME).toBe(value)
@@ -108,7 +108,7 @@ describe('Questioner', () => {
       ['1', 'IS_FAVE_NOT_ZERO', true],
       ['0', 'IS_FAVE_NOT_ZERO', false]
     ])("source map 'FAVE_INT'=%s, yields '%s'=%s'", (faveInt, parameter, value, done) => {
-      const questioner = new Questioner({ interrogationBundle: sourceMappingIB })
+      const questioner = new Questioner({ interrogationBundle : sourceMappingIB })
 
       questioner.question().then(() => {
         expect(questioner.values[parameter]).toBe(value)
@@ -119,7 +119,7 @@ describe('Questioner', () => {
   })
 
   test.each([['yes', 'us'], ['no', 'them']])('Local map %s -> %s', (answer, value, done) => {
-    const questioner = new Questioner({ interrogationBundle: simpleLocalMapIB })
+    const questioner = new Questioner({ interrogationBundle : simpleLocalMapIB })
 
     questioner.question().then(() => {
       expect(questioner.values.ORG_COMMON_NAME).toBe(value)
@@ -165,7 +165,7 @@ describe('Questioner', () => {
     const ib = structuredClone(simpleIB)
     ib.questions[0].paramType = type
 
-    const questioner = new Questioner({ interrogationBundle: ib })
+    const questioner = new Questioner({ interrogationBundle : ib })
 
     questioner.question({ input }).then(() => {
       expect(questioner.values.IS_CLIENT).toBe(expected)
@@ -218,11 +218,11 @@ describe('Questioner', () => {
     ["no 'parameter' for question", noQuestionParameterIB, /does not define a 'parameter'/],
     ["no 'prompt' for question", noQuestionPromptIB, /does not define a 'prompt'/]
   ])('Will raise an exception on %s.', (desc, ib, exceptionRe) => {
-    expect(() => new Questioner({ interrogationBundle: ib })).toThrow(exceptionRe)
+    expect(() => new Questioner({ interrogationBundle : ib })).toThrow(exceptionRe)
   })
 
   describe('cookie parameters', () => {
-    const questioner = new Questioner({ interrogationBundle: cookieParameterIB })
+    const questioner = new Questioner({ interrogationBundle : cookieParameterIB })
 
     beforeAll(async() => {
       const qPromise = questioner.question()
