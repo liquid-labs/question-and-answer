@@ -258,7 +258,7 @@ const transformValue = ({ paramType, value }) => {
   return value
 }
 
-const verifyAnswerForm = ({ output, type, value }) => {
+const verifyAnswerForm = ({ type, value }) => {
   if ((/int(?:eger)?/i).test(type)) {
     if (isNaN(value) || !value.match(/^\d+$/)) {
       return `'${value}' is not a valid integer.`
@@ -269,9 +269,9 @@ const verifyAnswerForm = ({ output, type, value }) => {
       return `'${value}' is not a valid ${type}.`
     }
   }
-  else if ((/bool(?:ean)/i).test(type)) {
-    if (!value.match(/\s*(?:y(?:es)|n(?:o)|t(?:rue)|f(?:alse))\s*/i)) {
-      return  `'${value}' is not a valid boolean. Try yes|no|true|false`
+  else if ((/bool(?:ean)?/i).test(type)) {
+    if (!value?.match(/\s*(?:y(?:es)|n(?:o)|t(?:rue)|f(?:alse))\s*/i)) {
+      return `'${value}' is not a valid boolean. Try yes|no|true|false`
     }
   }
   else if (value === '') { // it's a string type
