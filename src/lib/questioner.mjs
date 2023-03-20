@@ -269,7 +269,14 @@ const verifyAnswerForm = ({ output, type, value }) => {
       return `'${value}' is not a valid ${type}.`
     }
   }
-  // else it's a string
+  else if ((/bool(?:ean)/i).test(type)) {
+    if (!value.match(/\s*(?:y(?:es)|n(?:o)|t(?:rue)|f(?:alse))\s*/i)) {
+      return  `'${value}' is not a valid boolean. Try yes|no|true|false`
+    }
+  }
+  else if (value === '') { // it's a string type
+    return 'Empty string not allowed.'
+  }
 
   return true // we've passed the gauntlet
 }
