@@ -109,7 +109,7 @@ const Questioner = class {
         else { // the 'answer form' is invalid; let's try again
           this.#output.write(verifyResult)
           rl.close() // we'll create a new one
-          this.#askQuestion(q)
+          await this.#askQuestion(q)
         }
       } // try for rl
       finally { rl.close() }
