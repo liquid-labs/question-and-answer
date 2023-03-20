@@ -26,20 +26,24 @@ const Questioner = class {
   #initialParameters
   #input
   #output
-  #interogationBundle = []
+  #interrogationBundle = []
   #noSkipDefined
   #results = []
 
   constructor({
     input = process.stdin,
     output = process.stdout,
+    interrogationBundle,
     initialParameters = {},
     noSkipDefined = false
   } = {}) {
     this.#input = input
     this.#output = output
+    this.#interrogationBundle = interrogationBundle
     this.#initialParameters = initialParameters
     this.#noSkipDefined = noSkipDefined
+
+    this.#verifyInterrogationBundle()
   }
 
   #addResult({ value, source }) {
@@ -115,7 +119,7 @@ const Questioner = class {
   }
 
   async #doQuestions() {
-    for (const q of this.#interogationBundle.questions) {
+    for (const q of this.#interrogationBundle.questions) {
       await this.#askQuestion(q)
     }
   }
@@ -141,47 +145,7 @@ const Questioner = class {
     return this.getResult(parameter) !== undefined || (parameter in this.#initialParameters)
   }
 
-  get interogationBundle() { return this.#interogationBundle } // TODO: clone
-
-  set interogationBundle(ib) {
-    const verifyMappings = (mappings) => {
-      for (const { maps } of mappings) { // TODO: verify condition if present
-        for (const { parameter, source, value } of maps) {
-          if (parameter === undefined) {
-            throw createError.BadRequest("One of the mappings lacks a 'parameter' parameter.")
-          }
-          if (source === undefined && value === undefined) {
-            throw createError.BadRequest(`Mapping for '${parameter}' must specify one of 'source' or 'value'.`)
-          }
-        }
-      }
-    }
-
-    ib.questions.forEach(({ mappings, parameter, paramType, prompt }, i) => {
-      // TODO: replace with some kind of JSON schema verification
-      if (parameter === undefined) {
-        throw createError.BadRequest(`Question ${i + 1} does not define a 'parameter'.`)
-      }
-      if (prompt === undefined) {
-        throw createError.BadRequest(`Question ${i + 1} does not define a 'prompt'.`)
-      }
-      if (paramType !== undefined && !paramType.match(/bool(?:ean)?|int(?:eger)?|float|numeric|string/)) {
-        throw createError.BadRequest(`Found unknown parameter type '${paramType}' in interogation bundle question ${i + 1}.`)
-      }
-
-      if (mappings) {
-        verifyMappings(mappings)
-      }
-
-      // TODO: verify conditionals...
-    })
-
-    if (ib.mappings) {
-      verifyMappings(ib.mappings)
-    }
-
-    this.#interogationBundle = ib
-  }
+  get interrogationBundle() { return this.#interrogationBundle } // TODO: clone
 
   #processMappings(mappings) {
     mappings.forEach((mapping) => {
@@ -215,14 +179,14 @@ const Questioner = class {
   }
 
   async question() {
-    if (this.#interogationBundle === undefined) {
-      throw createError.BadRequest("Must set 'interogation bundle' prior to invoking the questioning.")
+    if (this.#interrogationBundle === undefined) {
+      throw createError.BadRequest("Must set 'interrogation bundle' prior to invoking the questioning.")
     }
 
     await this.#doQuestions()
 
-    if (this.#interogationBundle.mappings !== undefined) {
-      this.#processMappings(this.#interogationBundle.mappings)
+    if (this.#interrogationBundle.mappings !== undefined) {
+      this.#processMappings(this.#interrogationBundle.mappings)
     }
   }
 
@@ -230,6 +194,46 @@ const Questioner = class {
 
   get values() {
     return this.#results.reduce((acc, { parameter, value }) => { acc[parameter] = value; return acc }, {})
+  }
+
+  #verifyInterrogationBundle() {
+    const verifyMappings = (mappings) => {
+      for (const { maps } of mappings) { // TODO: verify condition if present
+        for (const { parameter, source, value } of maps) {
+          if (parameter === undefined) {
+            throw createError.BadRequest("One of the mappings lacks a 'parameter' parameter.")
+          }
+          if (source === undefined && value === undefined) {
+            throw createError.BadRequest(`Mapping for '${parameter}' must specify one of 'source' or 'value'.`)
+          }
+        }
+      }
+    }
+
+    const ib = this.#interrogationBundle
+
+    ib.questions.forEach(({ mappings, parameter, paramType, prompt }, i) => {
+      // TODO: replace with some kind of JSON schema verification
+      if (parameter === undefined) {
+        throw createError.BadRequest(`Question ${i + 1} does not define a 'parameter'.`)
+      }
+      if (prompt === undefined) {
+        throw createError.BadRequest(`Question ${i + 1} does not define a 'prompt'.`)
+      }
+      if (paramType !== undefined && !paramType.match(/bool(?:ean)?|int(?:eger)?|float|numeric|string/)) {
+        throw createError.BadRequest(`Found unknown parameter type '${paramType}' in interrogation bundle question ${i + 1}.`)
+      }
+
+      if (mappings) {
+        verifyMappings(mappings)
+      }
+
+      // TODO: verify conditionals...
+    })
+
+    if (ib.mappings) {
+      verifyMappings(ib.mappings)
+    }
   }
 }
 
@@ -247,7 +251,7 @@ const transformValue = ({ paramType, value }) => {
     value = parseFloat(value)
   }
   else { // this should be pre-screenned, but for the sake of robustness and completeness
-    throw createError.BadRequest(`Invalid parameter type '${paramType}' found while processing interogation bundle.`)
+    throw createError.BadRequest(`Invalid parameter type '${paramType}' found while processing interrogation bundle.`)
   }
 
   return value

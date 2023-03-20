@@ -12,7 +12,7 @@ const envFile = process.argv[3];
     : JSON.parse(await fs.readFile(envFile, { encoding: 'utf8' }))
 
   const questioner = new Questioner({ initialParameters })
-  questioner.interogationBundle = ib
+  questioner.interrogationBundle = ib
   await questioner.question()
 
   console.log(questioner.values)
