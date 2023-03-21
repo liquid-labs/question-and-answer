@@ -15,6 +15,19 @@
  * result in the value staying as the default. To un-set the value, the user would answer '-'.
  *
  * Note that a blank answer with no default is also blank. You can, but don't have to use the '-'.
+ *
+ * <details>
+ * <summary>Developer notes</summary>
+ *
+ * ## Developer notes
+ *
+ * We're not strictly enforcing parameter types in-so-far as user suppelied `values` our `source` results (including
+ * `elseValue` and `elseSource`) are essentialy "trusted" to be of the proper type, but we should check and coerce
+ * string results (from the valuess). Also, why not have `evalString` as an option from condition eval? E.g., `'' ||
+ * 'Larry'` is a valid expression. (If we do this, it might make sense to separate out the 'safe expression' testing
+ * to be distinct based on the type of item; e.g., '+' and '||' are valid with strings, but '%' is just non-sensical.)
+ *
+ * </detials>
  */
 import * as readline from 'node:readline'
 
@@ -51,14 +64,27 @@ const Questioner = class {
     // We want source second so that we create a new object rather than modify source. We want 'value' last because
     // the 'value' attached to the source is always a string, while the final value will have been converted by type.
     // We could also use 'structuredClone', but Object.assign should be sufficient.
-    const result = Object.assign({}, source, { value })
+    const result = Object.assign({}, structuredClone(source), { value })
     delete result.mappings
     this.#results.push(result)
   }
 
   async #askQuestion(q) {
-    const conditionPass = q.condition === undefined || this.#evalCondition(q.condition) === true
-    if (conditionPass === false) return
+    const conditionPass = q.condition === undefined || this.#evalTruth(q.condition) === true
+    if (conditionPass === false) {
+      if (q.elseValue !== undefined) {
+        this.#addResult({ source : q, value : q.elseValue })
+      }
+      else if (q.elseSource !== undefined) {
+        this.#addResult({
+          source : q,
+          value  : q.paramType.match(/bool(?:ean)?/)
+            ? this.#evalTruth(q.elseSource)
+            : this.#evalNumber(q.elseSource)
+        })
+      }
+      return
+    }
 
     const definedSkip =
       // v global no skip               v question-scoped no skip  v otherwise, skip if we has it
@@ -100,7 +126,7 @@ const Questioner = class {
 
         const verifyResult = verifyAnswerForm({ type, value : answer })
         if (verifyResult === true) {
-          this.#addResult({ source : q, value : transformValue({ paramType : type, value : answer }) })
+          this.#addResult({ source : q, value : transformStringValue({ paramType : type, value : answer }) })
 
           if (q.mappings !== undefined) {
             this.#processMappings(q.mappings)
@@ -125,7 +151,12 @@ const Questioner = class {
     }
   }
 
-  #evalCondition(condition) {
+  #evalNumber(condition) {
+    const evaluator = new Evaluator({ parameters : this.#evalParams() })
+    return evaluator.evalNumber(condition)
+  }
+
+  #evalTruth(condition) {
     const evaluator = new Evaluator({ parameters : this.#evalParams() })
     return evaluator.evalTruth(condition)
   }
@@ -135,7 +166,11 @@ const Questioner = class {
   }
 
   get(parameter) {
-    return this.getResult(parameter)?.value || this.#initialParameters[parameter]
+    const val = this.getResult(parameter)?.value
+    if (val === undefined) { // val may be 'false', which is fine
+      return this.#initialParameters[parameter]
+    }
+    return val
   }
 
   getResult(parameter) {
@@ -146,11 +181,11 @@ const Questioner = class {
     return this.getResult(parameter) !== undefined || (parameter in this.#initialParameters)
   }
 
-  get interrogationBundle() { return this.#interrogationBundle } // TODO: clone
+  get interrogationBundle() { return structuredClone(this.#interrogationBundle) }
 
   #processMappings(mappings) {
     mappings.forEach((mapping) => {
-      if (mapping.condition === undefined || this.#evalCondition(mapping.condition)) {
+      if (mapping.condition === undefined || this.#evalTruth(mapping.condition)) {
         mapping.maps.forEach((map) => {
           // having both source and value is not allowed and verified when the IB is loaded
           if (map.source !== undefined) {
@@ -164,12 +199,12 @@ const Questioner = class {
             }
             else {
               value = evaluator.evalNumber(map.source)
-              value = transformValue({ paramType : map.paramType, value })
+              value = transformStringValue({ paramType : map.paramType, value })
             }
             this.#addResult({ source : map, value })
           }
           else if (map.value !== undefined) {
-            this.#addResult({ source : map, value : transformValue(map) })
+            this.#addResult({ source : map, value : transformStringValue(map) })
           }
           else { // this should already be verified up front, but for the sake of comopletness
             throw new Error(`Mapping for '${map.parameter}' must specify either 'source' or 'value'.`)
@@ -238,7 +273,7 @@ const Questioner = class {
   }
 }
 
-const transformValue = ({ paramType, value }) => {
+const transformStringValue = ({ paramType, value }) => {
   if (paramType === undefined || paramType === 'string') { // most common case
     return value
   }

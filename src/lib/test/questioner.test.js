@@ -50,7 +50,7 @@ describe('Questioner', () => {
       child.stdin.write('yes\n')
     })
 
-    test('processes question-local maps when question is deined-skipped', (done) => {
+    test('processes question-local maps when question is defined-skipped', (done) => {
       const questioner = new Questioner({
         initialParameters   : { IS_CLIENT : true },
         interrogationBundle : simpleLocalMapIB
@@ -75,6 +75,40 @@ describe('Questioner', () => {
       questioner.question().then(() => {
         try {
           expect(questioner.get('IS_CLIENT')).toBe(undefined)
+          expect(questioner.get('ORG_COMMON_NAME')).toBe(undefined) // this is the mapped value
+        }
+        finally { done() }
+      })
+    })
+
+    test("when question is condition-skipped, uses 'elseValue' if present", (done) => {
+      const ib = structuredClone(simpleLocalMapIB)
+      ib.questions[0].condition = 'FOO'
+      ib.questions[0].elseValue = false
+      const initialParameters = { FOO : false }
+
+      const questioner = new Questioner({ initialParameters, interrogationBundle : ib })
+
+      questioner.question().then(() => {
+        try {
+          expect(questioner.get('IS_CLIENT')).toBe(false)
+          expect(questioner.get('ORG_COMMON_NAME')).toBe(undefined) // this is the mapped value
+        }
+        finally { done() }
+      })
+    })
+
+    test("when question is condition-skipped, uses 'elseSource' if present", (done) => {
+      const ib = structuredClone(simpleLocalMapIB)
+      ib.questions[0].condition = 'FOO'
+      ib.questions[0].elseSource = 'BAR || BAZ'
+      const initialParameters = { FOO : false, BAR : true, BAZ : false }
+
+      const questioner = new Questioner({ initialParameters, interrogationBundle : ib })
+
+      questioner.question().then(() => {
+        try {
+          expect(questioner.get('IS_CLIENT')).toBe(true)
           expect(questioner.get('ORG_COMMON_NAME')).toBe(undefined) // this is the mapped value
         }
         finally { done() }
@@ -128,8 +162,10 @@ describe('Questioner', () => {
     input.send(answer + '\n')
   })
 
-  test.each([['yes', DO_YOU_LIKE_MILK], ['no', IS_THIS_THE_END]]) // eslint-disable-line func-call-spacing
-  ('Conditional question %s -> %s', (answer, followup, done) => { // eslint-disable-line no-unexpected-multiline
+  test.each([
+    ['yes', DO_YOU_LIKE_MILK],
+    ['no', IS_THIS_THE_END]
+  ])('Conditional question %s -> %s', (answer, followup, done) => {
     const testScriptPath = fsPath.join(__dirname, 'conditional-question.js')
 
     // You cannot (as of Node 19.3.0) listen for events on your own stdout, so we have to create a child process.
