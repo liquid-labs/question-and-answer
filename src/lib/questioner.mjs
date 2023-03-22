@@ -136,10 +136,16 @@ const Questioner = class {
           answer = undefined
         }
 
-        const verifyResult = verifyAnswerForm({ type, value : answer })
+        // first verify form as a string
+        let verifyResult = verifyAnswerForm({ type, value : answer })
+        let value
+        if (verifyResult === true) {
+          value = transformStringValue({ paramType : type, value : answer })
+          verifyResult = verifyRequirements({ op : q, value })
+        }
         if (verifyResult === true) {
           q.disposition = ANSWERED
-          this.#addResult({ source : q, value : transformStringValue({ paramType : type, value : answer }) })
+          this.#addResult({ source : q, value })
 
           if (q.mappings !== undefined) {
             this.#processMappings(q.mappings)
@@ -326,11 +332,57 @@ const verifyAnswerForm = ({ type, value }) => {
       return `'${value}' is not a valid boolean. Try yes|no|true|false`
     }
   }
-  else if (value === '') { // it's a string type
-    return 'Empty string not allowed.'
-  }
 
   return true // we've passed the gauntlet
+}
+
+const verifyRequirements = ({ op, value }) => {
+  const { parameter, requireSomething, requireTruthy, requireExact, requireMatch } = op
+  let { requireOneOf } = op
+
+  // DEBUG
+  if (requireExact !== undefined) {
+    console.error("It's exact!")
+  }
+  // GUBED
+
+  if ((requireSomething === true || requireSomething === 'true') && value === undefined) {
+    return `Parameter '${parameter}' must have a defined value.`
+  }
+  else if ((requireTruthy === true || requireTruthy === 'true') && !value) {
+    return `Parameter '${parameter}' has value '${value}'; must have a "truth-y" value.`
+  }
+  else if (requireExact !== undefined && (requireExact + '') !== (value + '')) {
+    return `Parameter '${parameter}' has value '${value}'; value must be '${requireExact}'.`
+  }
+  else if (requireOneOf !== undefined) {
+    if ((typeof requireOneOf) === 'string') {
+      requireOneOf = requireOneOf.split(/\s*,\s*/)
+    }
+    if (!Array.isArray(requireOneOf)) {
+      throw createError.BadRequest(`Parameter '${parameter}' 'requireOneOf' is malformed; must be an array of values.`)
+    }
+    if (!requireOneOf.includes(value)) {
+      return `Parameter '${parameter}' has value '${value}'; value must be one of '${requireOneOf.join("', ")}'.`
+    }
+  }
+  else if (requireMatch !== undefined) {
+    if (!value.match) {
+      throw createError.BadRequest(`Parameter '${parameter}' 'requireMatch' must be applied a string.`)
+    }
+
+    let regex
+    try { regex = new RegExp(requireMatch) }
+    catch { // there's only one reason to throw, right?
+      throw createError.BadRequest(`Parameter '${parameter}' 'requireMatch' is not a valid regular expression.`)
+    }
+
+    if (!value.match(regex)) {
+      return `Parameter '${parameter}' has value '${value}'; value must match /${requireMatch}/'.`
+    }
+  }
+
+  return true
 }
 
 export { Questioner, ANSWERED, CONDITION_SKIPPED, DEFINED_SKIPPED }
