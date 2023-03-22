@@ -118,14 +118,14 @@ describe('Questioner', () => {
 
   describe('boolean questions', () => {
     test.each([
-      [ 'y', true],
-      [ 'n', false],
-      [ 'Y', true],
-      [ 'N', false],
-      [ 't', true],
-      [ 'T', true],
-      [ 'f', false],
-      [ 'F', false],
+      ['y', true],
+      ['n', false],
+      ['Y', true],
+      ['N', false],
+      ['t', true],
+      ['T', true],
+      ['f', false],
+      ['F', false],
       ['yes', true],
       ['Yes', true],
       ['no', false],
@@ -171,14 +171,14 @@ describe('Questioner', () => {
     })
 
     test.each([
-      [ 'bool', 'y', true ],
-      [ 'int', '1', 1]
-    ])(`maps 'source'd paramType %s input '%s' -> %p`, (paramType, value, expected, done) => {
+      ['bool', 'y', true],
+      ['int', '1', 1]
+    ])('maps \'source\'d paramType %s input \'%s\' -> %p', (paramType, value, expected, done) => {
       const interrogationBundle = structuredClone(simpleMapIB)
       delete interrogationBundle.mappings[0].maps[0].value
       interrogationBundle.mappings[0].maps[0].paramType = paramType
       interrogationBundle.mappings[0].maps[0].source = 'ENV_VAR'
-      const initialParameters = { ENV_VAR: value }
+      const initialParameters = { ENV_VAR : value }
 
       const questioner = new Questioner({ interrogationBundle, initialParameters })
 
