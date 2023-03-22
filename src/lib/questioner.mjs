@@ -191,13 +191,13 @@ const Questioner = class {
           if (map.source !== undefined) {
             const evaluator = new Evaluator({ parameters : this.#evalParams() })
             let value
-            if (map.paramType.match(/bool(?:ean)?/i)) {
-              value = evaluator.evalTruth(map.source)
-            }
-            else if (map.paramType === undefined || map.paramType === 'string') {
+            if (map.paramType === undefined || map.paramType === 'string') {
               throw createError.BadRequest(`Cannot map parameter '${map.parameter}' of type 'string' to a 'source' value. Must boolean or some numeric type.`)
             }
-            else {
+            else if (map.paramType.match(/bool(?:ean)?/i)) {
+              value = evaluator.evalTruth(map.source)
+            }
+            else { // it's numeric
               value = evaluator.evalNumber(map.source)
               value = transformStringValue({ paramType : map.paramType, value })
             }
@@ -305,7 +305,7 @@ const verifyAnswerForm = ({ type, value }) => {
     }
   }
   else if ((/bool(?:ean)?/i).test(type)) {
-    if (!value?.match(/\s*(?:y(?:es)|n(?:o)|t(?:rue)|f(?:alse))\s*/i)) {
+    if (!value?.match(/\s*(?:y(?:es)?|n(?:o)?|t(?:rue)?|f(?:alse)?)\s*/i)) {
       return `'${value}' is not a valid boolean. Try yes|no|true|false`
     }
   }

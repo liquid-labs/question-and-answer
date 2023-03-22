@@ -116,14 +116,33 @@ describe('Questioner', () => {
     })
   })
 
-  test('can process a simple boolean question', (done) => {
-    const questioner = new Questioner({ interrogationBundle : simpleIB })
+  describe('boolean questions', () => {
+    test.each([
+      ['y', true],
+      ['n', false],
+      ['Y', true],
+      ['N', false],
+      ['t', true],
+      ['T', true],
+      ['f', false],
+      ['F', false],
+      ['yes', true],
+      ['Yes', true],
+      ['no', false],
+      ['No', false],
+      ['true', true],
+      ['True', true],
+      ['false', false],
+      ['False', false]
+    ])("simple boolean question answer '%s' -> %s", (answer, result, done) => {
+      const questioner = new Questioner({ interrogationBundle : simpleIB })
 
-    questioner.question().then(() => {
-      expect(questioner.values.IS_CLIENT).toBe(true)
-      done()
+      questioner.question().then(() => {
+        expect(questioner.values.IS_CLIENT).toBe(result)
+        done()
+      })
+      input.send(answer + '\n')
     })
-    input.send('yes\n')
   })
 
   describe('Global mappings', () => {
@@ -149,6 +168,25 @@ describe('Questioner', () => {
         done()
       })
       input.send(faveInt + '\n')
+    })
+
+    test.each([
+      ['bool', 'y', true],
+      ['int', '1', 1]
+    ])('maps \'source\'d paramType %s input \'%s\' -> %p', (paramType, value, expected, done) => {
+      const interrogationBundle = structuredClone(simpleMapIB)
+      delete interrogationBundle.mappings[0].maps[0].value
+      interrogationBundle.mappings[0].maps[0].paramType = paramType
+      interrogationBundle.mappings[0].maps[0].source = 'ENV_VAR'
+      const initialParameters = { ENV_VAR : value }
+
+      const questioner = new Questioner({ interrogationBundle, initialParameters })
+
+      questioner.question().then(() => {
+        expect(questioner.values.ORG_COMMON_NAME).toBe(expected)
+        done()
+      })
+      input.send('yes\n')
     })
   })
 
