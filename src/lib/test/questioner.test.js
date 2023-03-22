@@ -18,7 +18,7 @@ import {
   IS_THIS_THE_END,
   WHATS_YOUR_FAVORITE_INT
 } from './test-data'
-import { Questioner } from '../questioner'
+import { Questioner, ANSWERED, CONDITION_SKIPPED, DEFINED_SKIPPED } from '../questioner'
 
 const input = stdin()
 
@@ -59,6 +59,7 @@ describe('Questioner', () => {
       questioner.question().then(() => {
         try {
           expect(questioner.get('IS_CLIENT')).toBe(true)
+          expect(questioner.getResult('IS_CLIENT').disposition).toBe(DEFINED_SKIPPED)
           expect(questioner.get('ORG_COMMON_NAME')).toBe('us') // this is the mapped value
         }
         finally { done() }
@@ -75,6 +76,7 @@ describe('Questioner', () => {
       questioner.question().then(() => {
         try {
           expect(questioner.get('IS_CLIENT')).toBe(undefined)
+          expect(questioner.getResult('IS_CLIENT').disposition).toBe(CONDITION_SKIPPED)
           expect(questioner.get('ORG_COMMON_NAME')).toBe(undefined) // this is the mapped value
         }
         finally { done() }
@@ -92,6 +94,7 @@ describe('Questioner', () => {
       questioner.question().then(() => {
         try {
           expect(questioner.get('IS_CLIENT')).toBe(false)
+          expect(questioner.getResult('IS_CLIENT').disposition).toBe(CONDITION_SKIPPED)
           expect(questioner.get('ORG_COMMON_NAME')).toBe(undefined) // this is the mapped value
         }
         finally { done() }
@@ -109,6 +112,7 @@ describe('Questioner', () => {
       questioner.question().then(() => {
         try {
           expect(questioner.get('IS_CLIENT')).toBe(true)
+          expect(questioner.getResult('IS_CLIENT').disposition).toBe(CONDITION_SKIPPED)
           expect(questioner.get('ORG_COMMON_NAME')).toBe(undefined) // this is the mapped value
         }
         finally { done() }
@@ -138,8 +142,12 @@ describe('Questioner', () => {
       const questioner = new Questioner({ interrogationBundle : simpleIB })
 
       questioner.question().then(() => {
-        expect(questioner.values.IS_CLIENT).toBe(result)
-        done()
+        try {
+          expect(questioner.values.IS_CLIENT).toBe(result)
+          console.log('result:', questioner.getResult('IS_CLIENT')) // DEBUG
+          expect(questioner.getResult('IS_CLIENT').disposition).toBe(ANSWERED)
+        }
+        finally { done() }
       })
       input.send(answer + '\n')
     })

@@ -36,6 +36,11 @@ import createError from 'http-errors'
 import { Evaluator } from '@liquid-labs/condition-eval'
 import { formatTerminalText } from '@liquid-labs/terminal-text'
 
+// disposition constants
+const ANSWERED = 'answered'
+const CONDITION_SKIPPED = 'condition-skipped'
+const DEFINED_SKIPPED = 'define-skipped'
+
 const Questioner = class {
   #initialParameters
   #input
@@ -61,17 +66,21 @@ const Questioner = class {
   }
 
   #addResult({ value, source }) {
-    // We want source second so that we create a new object rather than modify source. We want 'value' last because
-    // the 'value' attached to the source is always a string, while the final value will have been converted by type.
-    // We could also use 'structuredClone', but Object.assign should be sufficient.
-    const result = Object.assign({}, structuredClone(source), { value })
+    // We want 'value' last because the 'value' attached to the source is always a string, while the final value will
+    // have been converted by type.
+    const result = Object.assign(structuredClone(source), { value })
+    // Let's tidy up the results with some info that is more of internal use and less relevant for reporting.
     delete result.mappings
+    // TODO: add option to retain these?
+    delete result.elseValue
+    delete result.elseSource
     this.#results.push(result)
   }
 
   async #askQuestion(q) {
     const conditionPass = q.condition === undefined || this.#evalTruth(q.condition) === true
     if (conditionPass === false) {
+      q.disposition = CONDITION_SKIPPED
       if (q.elseValue !== undefined) {
         this.#addResult({ source : q, value : q.elseValue })
       }
@@ -82,6 +91,9 @@ const Questioner = class {
             ? this.#evalTruth(q.elseSource)
             : this.#evalNumber(q.elseSource)
         })
+      }
+      else {
+        this.#addResult({ source : q })
       }
       return
     }
@@ -126,6 +138,7 @@ const Questioner = class {
 
         const verifyResult = verifyAnswerForm({ type, value : answer })
         if (verifyResult === true) {
+          q.disposition = ANSWERED
           this.#addResult({ source : q, value : transformStringValue({ paramType : type, value : answer }) })
 
           if (q.mappings !== undefined) {
@@ -140,8 +153,12 @@ const Questioner = class {
       } // try for rl
       finally { rl.close() }
     }
-    else if (q.mappings !== undefined) {
-      this.#processMappings(q.mappings)
+    else { // is already defined
+      q.disposition = DEFINED_SKIPPED
+      this.#addResult({ source : q, value : this.get(q.parameter) })
+      if (q.mappings !== undefined) {
+        this.#processMappings(q.mappings)
+      }
     }
   }
 
@@ -316,4 +333,4 @@ const verifyAnswerForm = ({ type, value }) => {
   return true // we've passed the gauntlet
 }
 
-export { Questioner }
+export { Questioner, ANSWERED, CONDITION_SKIPPED, DEFINED_SKIPPED }
