@@ -140,6 +140,7 @@ const Questioner = class {
         let verifyResult = verifyAnswerForm({ type, value : answer })
         let value
         if (verifyResult === true) {
+          q.rawAnswer = answer
           value = transformStringValue({ paramType : type, value : answer })
           verifyResult = verifyRequirements({ op : q, value })
         }

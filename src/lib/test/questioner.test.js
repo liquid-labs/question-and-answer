@@ -167,13 +167,15 @@ describe('Questioner', () => {
       ['True', true],
       ['false', false],
       ['False', false]
-    ])("simple boolean question answer '%s' -> %s", (answer, result, done) => {
+    ])("simple boolean question answer '%s' -> %s", (answer, expected, done) => {
       const questioner = new Questioner({ interrogationBundle : simpleIB })
 
       questioner.question().then(() => {
         try {
-          expect(questioner.values.IS_CLIENT).toBe(result)
-          expect(questioner.getResult('IS_CLIENT').disposition).toBe(ANSWERED)
+          const result = questioner.getResult('IS_CLIENT')
+          expect(result.value).toBe(expected)
+          expect(result.rawAnswer).toBe(answer)
+          expect(result.disposition).toBe(ANSWERED)
         }
         finally { done() }
       })
