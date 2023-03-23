@@ -224,10 +224,14 @@ const Questioner = class {
               value = evaluator.evalNumber(map.source)
               value = transformStringValue({ paramType : map.paramType, value })
             }
+
+            verifyMappingValue({ map, value })
             this.#addResult({ source : map, value })
           }
           else if (map.value !== undefined) {
-            this.#addResult({ source : map, value : transformStringValue(map) })
+            const value = transformStringValue(map)
+            verifyMappingValue({ map, value })
+            this.#addResult({ source : map, value })
           }
           else { // this should already be verified up front, but for the sake of comopletness
             throw new Error(`Mapping for '${map.parameter}' must specify either 'source' or 'value'.`)
@@ -334,6 +338,19 @@ const verifyAnswerForm = ({ type, value }) => {
   }
 
   return true // we've passed the gauntlet
+}
+
+const verifyMappingValue = ({ map, value }) => {
+  if (verifyRequirements({ op: map, value }) !== true) {
+    let msg
+    if (m.description) {
+      msg = `${map.description} ${value} (mapping error)`
+    }
+    else {
+      msg = `Mapping requirement failed for parameter ${map.parameter}`
+    }
+    throw createError.BadRequest(msg)
+  }
 }
 
 const verifyRequirements = ({ op, value }) => {
