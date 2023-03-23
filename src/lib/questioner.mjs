@@ -357,12 +357,6 @@ const verifyRequirements = ({ op, value }) => {
   const { parameter, requireSomething, requireTruthy, requireExact, requireMatch } = op
   let { requireOneOf } = op
 
-  // DEBUG
-  if (requireExact !== undefined) {
-    console.error("It's exact!")
-  }
-  // GUBED
-
   if ((requireSomething === true || requireSomething === 'true') && value === undefined) {
     return `Parameter '${parameter}' must have a defined value.`
   }
