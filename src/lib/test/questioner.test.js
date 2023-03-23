@@ -347,7 +347,7 @@ describe('Questioner', () => {
       })
       input.send(value + '\n')
     })
-/* TOOD: I can't get this to work; manual testing looks fine so I have to move on.
+    /* TOOD: I can't get this to work; manual testing looks fine so I have to move on.
     test.each([
       // requireDefined
       // ['', 'string', 'requireSomething', true]//,
@@ -367,8 +367,8 @@ describe('Questioner', () => {
       ['1', 'int', 'requireOneOf', [1,2]],
       ['true', 'bool', 'requireOneOf', [true,false]],
       ['false', 'bool', 'requireOneOf', [false,true]] */
-      // requireMatch
-      /* ['Hi', 'string', 'requireMatch', 'Hi'],
+    // requireMatch
+    /* ['Hi', 'string', 'requireMatch', 'Hi'],
       ['Hi', 'string', 'requireMatch', '[Hi]*'],
       ['Hi', 'string', 'requireMatch', '^[Hi]*$'] * /
     ])("Value '%s' (%s) and requirement %s=%s is rejected", (value, type, requirement, reqValue, done) => {

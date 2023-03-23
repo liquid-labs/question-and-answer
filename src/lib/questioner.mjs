@@ -341,9 +341,9 @@ const verifyAnswerForm = ({ type, value }) => {
 }
 
 const verifyMappingValue = ({ map, value }) => {
-  if (verifyRequirements({ op: map, value }) !== true) {
+  if (verifyRequirements({ op : map, value }) !== true) {
     let msg
-    if (m.description) {
+    if (map.description) {
       msg = `${map.description} ${value} (mapping error)`
     }
     else {
