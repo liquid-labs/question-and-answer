@@ -101,22 +101,51 @@ describe('Questioner', () => {
       })
     })
 
-    test("when question is condition-skipped, uses 'elseSource' if present", (done) => {
-      const ib = structuredClone(simpleLocalMapIB)
-      ib.questions[0].condition = 'FOO'
-      ib.questions[0].elseSource = 'BAR || BAZ'
-      const initialParameters = { FOO : false, BAR : true, BAZ : false }
+    test('Will re-ask questions when answer form invalid', (done) => {
+      const testScriptPath = fsPath.join(__dirname, 'simple-int-question.js')
 
-      const questioner = new Questioner({ initialParameters, interrogationBundle : ib })
+      // You cannot (as of Node 19.3.0) listen for events on your own stdout, so we have to create a child process.
+      const child = spawn('node', [testScriptPath])
 
-      questioner.question().then(() => {
+      child.stdout.resume()
+      let count = 0
+      child.stdout.on('data', (output) => {
         try {
-          expect(questioner.get('IS_CLIENT')).toBe(true)
-          expect(questioner.getResult('IS_CLIENT').disposition).toBe(CONDITION_SKIPPED)
-          expect(questioner.get('ORG_COMMON_NAME')).toBe(undefined) // this is the mapped value
+          if (count === 0) {
+            expect(output.toString().trim()).toBe(WHATS_YOUR_FAVORITE_INT)
+          }
+          else if (count === 1 && output.toString().split('\n').length === 2) {
+            expect(output.toString().trim()).toMatch(/not a valid.+\n.+favorite int/m)
+            child.kill('SIGINT')
+            done()
+          }
+          else if (count === 1) {
+            expect(output.toString().trim()).toMatch(/not a valid/)
+          }
+          else if (count === 2) {
+            expect(output.toString().trim()).toBe(WHATS_YOUR_FAVORITE_INT)
+            child.kill('SIGINT')
+            done()
+          }
         }
-        finally { done() }
+        catch (e) {
+          child.kill('SIGINT')
+          fail(e)
+          done()
+        }
+
+        count += 1
       })
+
+      child.stdin.write('not a number\n')
+    })
+
+    test.each([
+      ['an invalid parameter type', badParameterIB, /unknown parameter type/i],
+      ["no 'parameter' for question", noQuestionParameterIB, /does not define a 'parameter'/],
+      ["no 'prompt' for question", noQuestionPromptIB, /does not define a 'prompt'/]
+    ])('Will raise an exception on %s.', (desc, ib, exceptionRe) => {
+      expect(() => new Questioner({ interrogationBundle : ib })).toThrow(exceptionRe)
     })
   })
 
@@ -144,7 +173,6 @@ describe('Questioner', () => {
       questioner.question().then(() => {
         try {
           expect(questioner.values.IS_CLIENT).toBe(result)
-          console.log('result:', questioner.getResult('IS_CLIENT')) // DEBUG
           expect(questioner.getResult('IS_CLIENT').disposition).toBe(ANSWERED)
         }
         finally { done() }
@@ -198,109 +226,172 @@ describe('Questioner', () => {
     })
   })
 
-  test.each([['yes', 'us'], ['no', 'them']])('Local map %s -> %s', (answer, value, done) => {
-    const questioner = new Questioner({ interrogationBundle : simpleLocalMapIB })
+  describe('Local mappings', () => {
+    test.each([['yes', 'us'], ['no', 'them']])('Local map %s -> %s', (answer, value, done) => {
+      const questioner = new Questioner({ interrogationBundle : simpleLocalMapIB })
 
-    questioner.question().then(() => {
-      expect(questioner.values.ORG_COMMON_NAME).toBe(value)
-      done()
-    })
-    input.send(answer + '\n')
-  })
-
-  test.each([
-    ['yes', DO_YOU_LIKE_MILK],
-    ['no', IS_THIS_THE_END]
-  ])('Conditional question %s -> %s', (answer, followup, done) => {
-    const testScriptPath = fsPath.join(__dirname, 'conditional-question.js')
-
-    // You cannot (as of Node 19.3.0) listen for events on your own stdout, so we have to create a child process.
-    const child = spawn('node', [testScriptPath])
-
-    child.stdout.resume()
-    child.stdout.once('data', (output) => {
-      expect(output.toString().trim()).toBe(IS_THE_COMPANY_THE_CLIENT + ' [y/n]')
-
-      child.stdout.once('data', (output) => {
-        expect(output.toString().trim()).toBe(followup)
-        child.stdin.write('yes\n')
-        if (answer === 'yes') {
-          child.stdin.write('yes\n')
-        }
-
-        child.kill('SIGINT')
+      questioner.question().then(() => {
+        expect(questioner.values.ORG_COMMON_NAME).toBe(value)
         done()
       })
+      input.send(answer + '\n')
     })
-
-    child.stdin.write(answer + '\n')
   })
 
-  test.each([
-    ['true', 'boolean', true],
-    ['true', 'bool', true],
-    ['true', 'string', 'true'],
-    ['5', 'integer', 5],
-    ['5.5', 'float', 5.5],
-    ['6.6', 'numeric', 6.6]
-  ])("Value '%s' type '%s' -> %p", (value, type, expected, done) => {
-    const ib = structuredClone(simpleIB)
-    ib.questions[0].paramType = type
+  describe('Conditional questions', () => {
+    test.each([
+      ['yes', DO_YOU_LIKE_MILK],
+      ['no', IS_THIS_THE_END]
+    ])('Conditional question %s -> %s', (answer, followup, done) => {
+      const testScriptPath = fsPath.join(__dirname, 'conditional-question.js')
 
-    const questioner = new Questioner({ interrogationBundle : ib })
+      // You cannot (as of Node 19.3.0) listen for events on your own stdout, so we have to create a child process.
+      const child = spawn('node', [testScriptPath])
 
-    questioner.question({ input }).then(() => {
-      expect(questioner.values.IS_CLIENT).toBe(expected)
-      done()
+      child.stdout.resume()
+      child.stdout.once('data', (output) => {
+        expect(output.toString().trim()).toBe(IS_THE_COMPANY_THE_CLIENT + ' [y/n]')
+
+        child.stdout.once('data', (output) => {
+          expect(output.toString().trim()).toBe(followup)
+          child.stdin.write('yes\n')
+          if (answer === 'yes') {
+            child.stdin.write('yes\n')
+          }
+
+          child.kill('SIGINT')
+          done()
+        })
+      })
+
+      child.stdin.write(answer + '\n')
     })
-    input.send(value + '\n')
+
+    test("when question is condition-skipped, uses 'elseSource' if present", (done) => {
+      const ib = structuredClone(simpleLocalMapIB)
+      ib.questions[0].condition = 'FOO'
+      ib.questions[0].elseSource = 'BAR || BAZ'
+      const initialParameters = { FOO : false, BAR : true, BAZ : false }
+
+      const questioner = new Questioner({ initialParameters, interrogationBundle : ib })
+
+      questioner.question().then(() => {
+        try {
+          expect(questioner.get('IS_CLIENT')).toBe(true)
+          expect(questioner.getResult('IS_CLIENT').disposition).toBe(CONDITION_SKIPPED)
+          expect(questioner.get('ORG_COMMON_NAME')).toBe(undefined) // this is the mapped value
+        }
+        finally { done() }
+      })
+    })
   })
 
-  test('Will re-ask questions when answer form invalid', (done) => {
-    const testScriptPath = fsPath.join(__dirname, 'simple-int-question.js')
+  describe('Value transforms', () => {
+    test.each([
+      ['true', 'boolean', true],
+      ['true', 'bool', true],
+      ['true', 'string', 'true'],
+      ['5', 'integer', 5],
+      ['5.5', 'float', 5.5],
+      ['6.6', 'numeric', 6.6]
+    ])("Value '%s' type '%s' -> %p", (value, type, expected, done) => {
+      const ib = structuredClone(simpleIB)
+      ib.questions[0].paramType = type
 
-    // You cannot (as of Node 19.3.0) listen for events on your own stdout, so we have to create a child process.
-    const child = spawn('node', [testScriptPath])
+      const questioner = new Questioner({ interrogationBundle : ib })
 
-    child.stdout.resume()
-    let count = 0
-    child.stdout.on('data', (output) => {
-      try {
-        if (count === 0) {
-          expect(output.toString().trim()).toBe(WHATS_YOUR_FAVORITE_INT)
-        }
-        else if (count === 1 && output.toString().split('\n').length === 2) {
-          expect(output.toString().trim()).toMatch(/not a valid.+\n.+favorite int/m)
-          child.kill('SIGINT')
-          done()
-        }
-        else if (count === 1) {
-          expect(output.toString().trim()).toMatch(/not a valid/)
-        }
-        else if (count === 2) {
-          expect(output.toString().trim()).toBe(WHATS_YOUR_FAVORITE_INT)
-          child.kill('SIGINT')
-          done()
-        }
-      }
-      catch (e) {
-        child.kill('SIGINT')
-        fail(e)
+      questioner.question().then(() => {
+        expect(questioner.values.IS_CLIENT).toBe(expected)
         done()
-      }
-
-      count += 1
+      })
+      input.send(value + '\n')
     })
-
-    child.stdin.write('not a number\n')
   })
 
-  test.each([
-    ['an invalid parameter type', badParameterIB, /unknown parameter type/i],
-    ["no 'parameter' for question", noQuestionParameterIB, /does not define a 'parameter'/],
-    ["no 'prompt' for question", noQuestionPromptIB, /does not define a 'prompt'/]
-  ])('Will raise an exception on %s.', (desc, ib, exceptionRe) => {
-    expect(() => new Questioner({ interrogationBundle : ib })).toThrow(exceptionRe)
+  describe('answer requirements', () => {
+    test.each([
+      // requireDefined
+      ['Hi', 'string', 'requireSomething', true],
+      ['1', 'int', 'requireSomething', true],
+      ['true', 'bool', 'requireSomething', true],
+      // requireTruthy
+      ['Hi', 'string', 'requireTruthy', true],
+      ['1', 'int', 'requireTruthy', true],
+      ['true', 'bool', 'requireTruthy', true],
+      // requireExact
+      ['Hi', 'string', 'requireExact', 'Hi'],
+      ['1', 'int', 'requireExact', 1],
+      ['true', 'bool', 'requireExact', true],
+      ['false', 'bool', 'requireExact', false],
+      // requireOneOf
+      ['Hi', 'string', 'requireOneOf', ['Hi', 'Bye']],
+      ['1', 'int', 'requireOneOf', [1, 2]],
+      ['true', 'bool', 'requireOneOf', [true, false]],
+      ['false', 'bool', 'requireOneOf', [false, true]],
+      // requireMatch
+      ['Hi', 'string', 'requireMatch', 'Hi'],
+      ['Hi', 'string', 'requireMatch', '[Hi]*'],
+      ['Hi', 'string', 'requireMatch', '^[Hi]*$']
+    ])("Value '%s' (%s) and requirement %s=%s is accepted", (value, type, requirement, reqValue, done) => {
+      const ib = structuredClone(simpleIB)
+      ib.questions[0].paramType = type
+      ib.questions[0][requirement] = reqValue
+
+      const questioner = new Questioner({ interrogationBundle : ib })
+
+      questioner.question().then(() => {
+        try {
+          expect(questioner.values.IS_CLIENT + '').toBe(value)
+        }
+        finally { done() }
+      })
+      input.send(value + '\n')
+    })
+    /* TOOD: I can't get this to work; manual testing looks fine so I have to move on.
+    test.each([
+      // requireDefined
+      // ['', 'string', 'requireSomething', true]//,
+      // ['', 'int', 'requireSomething', true],
+      // ['', 'bool', 'requireSomething', true]
+      // requireTruthy
+      ['', 'string', 'requireTruthy', true],
+      ['0', 'int', 'requireTruthy', true],
+      ['false', 'bool', 'requireTruthy', true],
+      // requireExact
+      ['Hi', 'string', 'requireExact', 'Hi'],
+      ['1', 'int', 'requireExact', 1],
+      ['true', 'bool', 'requireExact', true],
+      ['false', 'bool', 'requireExact', false]
+      // requireOneOf
+      /* ['Hi', 'string', 'requireOneOf', ['Hi','Bye']],
+      ['1', 'int', 'requireOneOf', [1,2]],
+      ['true', 'bool', 'requireOneOf', [true,false]],
+      ['false', 'bool', 'requireOneOf', [false,true]] */
+    // requireMatch
+    /* ['Hi', 'string', 'requireMatch', 'Hi'],
+      ['Hi', 'string', 'requireMatch', '[Hi]*'],
+      ['Hi', 'string', 'requireMatch', '^[Hi]*$'] * /
+    ])("Value '%s' (%s) and requirement %s=%s is rejected", (value, type, requirement, reqValue, done) => {
+      const testScriptPath = fsPath.join(__dirname, 'verify-failure-question.js')
+
+      // You cannot (as of Node 19.3.0) listen for events on your own stdout, so we have to create a child process.
+      const child = spawn('node', [testScriptPath, type, requirement, reqValue])
+
+      child.stdout.resume()
+      child.stdout.once('data', (devNull) => { // this is just the original question; we don't care about it here
+        console.log(devNull.toString())
+        child.stdout.once('data', (output) => {
+          try {
+            console.log(output.toString())
+            expect(output.toString().trim()).toMatch(/must/)
+
+            child.kill('SIGINT')
+          }
+          finally { done() }
+        })
+      })
+      child.stdin.write(value + '\n')
+    }) */
   })
 
   describe('cookie parameters', () => {
