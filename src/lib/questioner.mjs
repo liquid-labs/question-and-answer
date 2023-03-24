@@ -81,7 +81,7 @@ const Questioner = class {
     this.#results.push(result)
   }
 
-  async #askQuestion(q) {
+  async #askQuestion({ q, preface = '' }) {
     const conditionPass = q.condition === undefined || this.#evalTruth(q.condition) === true
     if (conditionPass === false) {
       q.disposition = CONDITION_SKIPPED
@@ -118,7 +118,7 @@ const Questioner = class {
           currValue = undefined
         }
 
-        let prompt = q.prompt
+        let prompt = preface + q.prompt
         let hint = ''
         if (currValue !== undefined) {
           if (q.paramType?.match(/bool(?:ean)?/i)) {
@@ -140,7 +140,7 @@ const Questioner = class {
         prompt = wrap(prompt, { width : this.#width }) + '\n' + hint
 
         rl.setPrompt(formatTerminalText(prompt))
-        rl.prompt(true)
+        rl.prompt()
 
         const it = rl[Symbol.asyncIterator]()
         let answer = (await it.next()).value.trim() || currValue || ''
@@ -165,9 +165,11 @@ const Questioner = class {
           }
         }
         else { // the 'answer form' is invalid; let's try again
-          this.#output.write(verifyResult)
+          verifyResult = '<warn>' + verifyResult + '<rst>'
+          verifyResult = wrap(verifyResult, { width : this.#width }) + '\n'
+          this.#output.write(formatTerminalText(verifyResult))
           rl.close() // we'll create a new one
-          await this.#askQuestion(q)
+          await this.#askQuestion({ q, preface : '\n' })
         }
       } // try for rl
       finally { rl.close() }
@@ -182,8 +184,11 @@ const Questioner = class {
   }
 
   async #doQuestions() {
+    let first = true
     for (const q of this.#interrogationBundle.questions) {
-      await this.#askQuestion(q)
+      const preface = first ? '' : '\n'
+      await this.#askQuestion({ q, preface })
+      first = false
     }
   }
 
