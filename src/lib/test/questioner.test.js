@@ -1,4 +1,4 @@
-/* global afterAll beforeAll describe expect fail jest test */
+/* global afterAll beforeAll describe expect jest test */
 import * as fsPath from 'node:path'
 import { spawn } from 'node:child_process'
 
@@ -14,7 +14,6 @@ import {
   simpleLocalMapIB,
   sourceMappingIB,
   DO_YOU_LIKE_MILK,
-  IS_THE_COMPANY_THE_CLIENT,
   IS_THIS_THE_END,
   WHATS_YOUR_FAVORITE_INT
 } from './test-data'
@@ -36,14 +35,23 @@ describe('Questioner', () => {
 
       child.stdout.resume()
       child.stdout.once('data', (output) => {
-        expect(output.toString().trim()).toBe(IS_THE_COMPANY_THE_CLIENT + ' [y/n]')
+        try {
+          expect(output.toString().trim()).toBe('Is the Company the client?\n[y=client/n=contractor]')
+        }
+        catch (e) {
+          done()
+          throw e
+        }
 
         child.stdout.once('data', (output) => {
-          expect(output.toString().trim()).toBe('Done? [y/n]')
-          child.stdin.write('yes\n')
-
-          child.kill('SIGINT')
-          done()
+          try {
+            expect(output.toString().trim()).toBe('Done?\n[y/n]')
+            child.stdin.write('yes\n')
+          }
+          finally {
+            child.kill('SIGINT')
+            done()
+          }
         })
       })
 
@@ -117,7 +125,6 @@ describe('Questioner', () => {
           else if (count === 1 && output.toString().split('\n').length === 2) {
             expect(output.toString().trim()).toMatch(/not a valid.+\n.+favorite int/m)
             child.kill('SIGINT')
-            done()
           }
           else if (count === 1) {
             expect(output.toString().trim()).toMatch(/not a valid/)
@@ -125,14 +132,12 @@ describe('Questioner', () => {
           else if (count === 2) {
             expect(output.toString().trim()).toBe(WHATS_YOUR_FAVORITE_INT)
             child.kill('SIGINT')
-            done()
           }
         }
         catch (e) {
           child.kill('SIGINT')
-          fail(e)
-          done()
         }
+        finally { done() }
 
         count += 1
       })
@@ -252,17 +257,25 @@ describe('Questioner', () => {
 
       child.stdout.resume()
       child.stdout.once('data', (output) => {
-        expect(output.toString().trim()).toBe(IS_THE_COMPANY_THE_CLIENT + ' [y/n]')
+        try {
+          expect(output.toString().trim()).toBe('Is the Company the client?\n[y=client/n=contractor]')
+        }
+        catch (e) {
+          done()
+          throw (e)
+        }
 
         child.stdout.once('data', (output) => {
-          expect(output.toString().trim()).toBe(followup)
-          child.stdin.write('yes\n')
-          if (answer === 'yes') {
+          try {
+            expect(output.toString().trim()).toBe(followup)
             child.stdin.write('yes\n')
-          }
+            if (answer === 'yes') {
+              child.stdin.write('yes\n')
+            }
 
-          child.kill('SIGINT')
-          done()
+            child.kill('SIGINT')
+          }
+          finally { done() }
         })
       })
 

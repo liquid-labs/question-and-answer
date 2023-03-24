@@ -118,24 +118,29 @@ const Questioner = class {
           currValue = undefined
         }
 
-        const wrappedPrompt = wrap(q.prompt, { width: this.#width })
-
-        // the '\n' puts the input cursor below the prompt for consistency
-        let prompt = '\n' + formatTerminalText(wrappedPrompt) + '\n'
+        let prompt = q.prompt
+        let hint = ''
         if (currValue !== undefined) {
           if (q.paramType?.match(/bool(?:ean)?/i)) {
-            prompt += '[' + (currValue === true ? 'Y/n' : 'y/N|-') + '] '
+            hint = '[' + (currValue === true ? 'Y/n|-' : 'y/N|-') + '] '
           }
           else {
-            prompt += `[${currValue}|-] `
+            hint = `[${currValue}|-] `
           }
         }
+        else if (prompt.match(/\[[^]+\] *$/)) { // do we already have a hint?
+          hint = prompt.replace(/.+(\[[^]+\]) *$/, '$1') + ' '
+          prompt = prompt.replace(/(.+?)\s*\[[^]+\] *$/, '$1') // we're gonig to add the hint back in a bit
+        }
         else if (q.paramType?.match(/bool(?:ean)?/i)) {
-          prompt += '[y/n] '
+          hint = '[y/n] '
         }
 
-        rl.setPrompt(prompt) // add newline for legibility
-        rl.prompt()
+        // the '\n' puts the input cursor below the prompt for consistency
+        prompt = wrap(prompt, { width : this.#width }) + '\n' + hint
+
+        rl.setPrompt(formatTerminalText(prompt))
+        rl.prompt(true)
 
         const it = rl[Symbol.asyncIterator]()
         let answer = (await it.next()).value.trim() || currValue || ''
