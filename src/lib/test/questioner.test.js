@@ -125,6 +125,7 @@ describe('Questioner', () => {
           else if (count === 1 && output.toString().split('\n').length === 2) {
             expect(output.toString().trim()).toMatch(/not a valid.+\n.+favorite int/m)
             child.kill('SIGINT')
+            done()
           }
           else if (count === 1) {
             expect(output.toString().trim()).toMatch(/not a valid/)
@@ -132,12 +133,13 @@ describe('Questioner', () => {
           else if (count === 2) {
             expect(output.toString().trim()).toBe(WHATS_YOUR_FAVORITE_INT)
             child.kill('SIGINT')
+            done()
           }
         }
         catch (e) {
           child.kill('SIGINT')
+          done()
         }
-        finally { done() }
 
         count += 1
       })

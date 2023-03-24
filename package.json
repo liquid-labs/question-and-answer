@@ -29,5 +29,8 @@
     "@liquid-labs/catalyst-scripts": "^1.0.0-alpha.58",
     "http-errors": "^2.0.0",
     "mock-stdin": "^1.0.0"
+  },
+  "liq": {
+    "packageType": "node|lib"
   }
 }
