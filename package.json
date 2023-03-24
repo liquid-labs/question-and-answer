@@ -22,7 +22,8 @@
   "homepage": "https://github.com/liquid-labs/question-and-answer#readme",
   "dependencies": {
     "@liquid-labs/condition-eval": "^1.0.0-alpha.17",
-    "@liquid-labs/terminal-text": "^1.0.0-alpha.1"
+    "@liquid-labs/terminal-text": "^1.0.0-alpha.1",
+    "@liquid-labs/wrap-text": "^1.0.0-alpha.1"
   },
   "devDependencies": {
     "@liquid-labs/catalyst-scripts": "^1.0.0-alpha.58",

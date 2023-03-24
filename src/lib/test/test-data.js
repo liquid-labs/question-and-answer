@@ -5,7 +5,7 @@ const simpleIntQuestionIB = {
   ]
 }
 
-const IS_THE_COMPANY_THE_CLIENT = 'Is the Company the client? (y=client/n=contractor)'
+const IS_THE_COMPANY_THE_CLIENT = 'Is the Company the client? [y=client/n=contractor]'
 const simpleIB = {
   questions : [
     { prompt : IS_THE_COMPANY_THE_CLIENT, parameter : 'IS_CLIENT', paramType : 'bool' }

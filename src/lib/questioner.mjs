@@ -35,6 +35,7 @@ import createError from 'http-errors'
 
 import { Evaluator } from '@liquid-labs/condition-eval'
 import { formatTerminalText } from '@liquid-labs/terminal-text'
+import { wrap } from '@liquid-labs/wrap-text'
 
 // disposition constants
 const ANSWERED = 'answered'
@@ -48,19 +49,22 @@ const Questioner = class {
   #interrogationBundle = []
   #noSkipDefined
   #results = []
+  #width
 
   constructor({
     input = process.stdin,
     output = process.stdout,
     interrogationBundle,
     initialParameters = {},
-    noSkipDefined = false
+    noSkipDefined = false,
+    width // leave undefined and take the 'wrap' default width if none provided
   } = {}) {
     this.#input = input
     this.#output = output
     this.#interrogationBundle = interrogationBundle
     this.#initialParameters = initialParameters
     this.#noSkipDefined = noSkipDefined
+    this.#width = width
 
     this.#verifyInterrogationBundle()
   }
@@ -114,21 +118,29 @@ const Questioner = class {
           currValue = undefined
         }
 
-        let prompt = '\n' + formatTerminalText(q.prompt) + ' '
+        let prompt = q.prompt
+        let hint = ''
         if (currValue !== undefined) {
           if (q.paramType?.match(/bool(?:ean)?/i)) {
-            prompt += '[' + (currValue === true ? 'Y/n' : 'y/N|-') + '] '
+            hint = '[' + (currValue === true ? 'Y/n|-' : 'y/N|-') + '] '
           }
           else {
-            prompt += `[${currValue}|-] `
+            hint = `[${currValue}|-] `
           }
         }
+        else if (prompt.match(/\[[^]+\] *$/)) { // do we already have a hint?
+          hint = prompt.replace(/.+(\[[^]+\]) *$/, '$1') + ' '
+          prompt = prompt.replace(/(.+?)\s*\[[^]+\] *$/, '$1') // we're gonig to add the hint back in a bit
+        }
         else if (q.paramType?.match(/bool(?:ean)?/i)) {
-          prompt += '[y/n] '
+          hint = '[y/n] '
         }
 
-        rl.setPrompt(prompt) // add newline for legibility
-        rl.prompt()
+        // the '\n' puts the input cursor below the prompt for consistency
+        prompt = wrap(prompt, { width : this.#width }) + '\n' + hint
+
+        rl.setPrompt(formatTerminalText(prompt))
+        rl.prompt(true)
 
         const it = rl[Symbol.asyncIterator]()
         let answer = (await it.next()).value.trim() || currValue || ''
