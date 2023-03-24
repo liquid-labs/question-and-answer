@@ -186,7 +186,7 @@ const Questioner = class {
   }
 
   #evalParams() {
-    return Object.assign(this.#initialParameters, this.values)
+    return Object.assign({}, this.#initialParameters, this.values)
   }
 
   get(parameter) {
