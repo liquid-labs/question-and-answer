@@ -35,6 +35,7 @@ import createError from 'http-errors'
 
 import { Evaluator } from '@liquid-labs/condition-eval'
 import { formatTerminalText } from '@liquid-labs/terminal-text'
+import { wrap } from '@liquid-labs/wrap-text'
 
 // disposition constants
 const ANSWERED = 'answered'
@@ -48,19 +49,22 @@ const Questioner = class {
   #interrogationBundle = []
   #noSkipDefined
   #results = []
+  #width
 
   constructor({
     input = process.stdin,
     output = process.stdout,
     interrogationBundle,
     initialParameters = {},
-    noSkipDefined = false
+    noSkipDefined = false,
+    width // leave undefined and take the 'wrap' default width if none provided
   } = {}) {
     this.#input = input
     this.#output = output
     this.#interrogationBundle = interrogationBundle
     this.#initialParameters = initialParameters
     this.#noSkipDefined = noSkipDefined
+    this.#width = width
 
     this.#verifyInterrogationBundle()
   }
@@ -114,7 +118,10 @@ const Questioner = class {
           currValue = undefined
         }
 
-        let prompt = '\n' + formatTerminalText(q.prompt) + ' '
+        const wrappedPrompt = wrap(q.prompt, { width: this.#width })
+
+        // the '\n' puts the input cursor below the prompt for consistency
+        let prompt = '\n' + formatTerminalText(wrappedPrompt) + '\n'
         if (currValue !== undefined) {
           if (q.paramType?.match(/bool(?:ean)?/i)) {
             prompt += '[' + (currValue === true ? 'Y/n' : 'y/N|-') + '] '
