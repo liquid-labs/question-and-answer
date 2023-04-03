@@ -76,7 +76,7 @@ describe('Questioner', () => {
 
     test('skips question-local maps when question is condition-skipped', (done) => {
       const ib = structuredClone(simpleLocalMapIB)
-      ib.questions[0].condition = 'FOO'
+      ib.actions[0].condition = 'FOO'
       const initialParameters = { FOO : false }
 
       const questioner = new Questioner({ initialParameters, interrogationBundle : ib })
@@ -93,8 +93,8 @@ describe('Questioner', () => {
 
     test("when question is condition-skipped, uses 'elseValue' if present", (done) => {
       const ib = structuredClone(simpleLocalMapIB)
-      ib.questions[0].condition = 'FOO'
-      ib.questions[0].elseValue = false
+      ib.actions[0].condition = 'FOO'
+      ib.actions[0].elseValue = false
       const initialParameters = { FOO : false }
 
       const questioner = new Questioner({ initialParameters, interrogationBundle : ib })
@@ -286,8 +286,8 @@ describe('Questioner', () => {
 
     test("when question is condition-skipped, uses 'elseSource' if present", (done) => {
       const ib = structuredClone(simpleLocalMapIB)
-      ib.questions[0].condition = 'FOO'
-      ib.questions[0].elseSource = 'BAR || BAZ'
+      ib.actions[0].condition = 'FOO'
+      ib.actions[0].elseSource = 'BAR || BAZ'
       const initialParameters = { FOO : false, BAR : true, BAZ : false }
 
       const questioner = new Questioner({ initialParameters, interrogationBundle : ib })
@@ -313,7 +313,7 @@ describe('Questioner', () => {
       ['6.6', 'numeric', 6.6]
     ])("Value '%s' type '%s' -> %p", (value, type, expected, done) => {
       const ib = structuredClone(simpleIB)
-      ib.questions[0].paramType = type
+      ib.actions[0].paramType = type
 
       const questioner = new Questioner({ interrogationBundle : ib })
 
@@ -351,8 +351,8 @@ describe('Questioner', () => {
       ['Hi', 'string', 'requireMatch', '^[Hi]*$']
     ])("Value '%s' (%s) and requirement %s=%s is accepted", (value, type, requirement, reqValue, done) => {
       const ib = structuredClone(simpleIB)
-      ib.questions[0].paramType = type
-      ib.questions[0][requirement] = reqValue
+      ib.actions[0].paramType = type
+      ib.actions[0][requirement] = reqValue
 
       const questioner = new Questioner({ interrogationBundle : ib })
 

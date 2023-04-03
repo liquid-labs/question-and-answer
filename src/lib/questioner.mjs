@@ -185,7 +185,7 @@ const Questioner = class {
 
   async #doQuestions() {
     let first = true
-    for (const q of this.#interrogationBundle.questions) {
+    for (const q of this.#interrogationBundle.actions) {
       const preface = first ? '' : '\n'
       await this.#askQuestion({ q, preface })
       first = false
@@ -293,7 +293,7 @@ const Questioner = class {
 
     const ib = this.#interrogationBundle
 
-    ib.questions.forEach(({ mappings, parameter, paramType, prompt }, i) => {
+    ib.actions.forEach(({ mappings, parameter, paramType, prompt }, i) => {
       // TODO: replace with some kind of JSON schema verification
       if (parameter === undefined) {
         throw createError.BadRequest(`Question ${i + 1} does not define a 'parameter'.`)
