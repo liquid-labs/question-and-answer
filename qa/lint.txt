@@ -1,0 +1,10 @@
+Test git rev: b0a4bbdb13c240145be47dccdf41e74836b8d33d
+
+/Users/zane/.liq/playground/liquid-labs/question-and-answer/src/cli/index.js
+   8:7   error  Unexpected space before function parentheses  space-before-function-paren
+   9:72  error  Missing space after key 'encoding'            key-spacing
+  12:47  error  Missing space after key 'encoding'            key-spacing
+
+✖ 3 problems (3 errors, 0 warnings)
+  3 errors and 0 warnings potentially fixable with the `--fix` option.
+
