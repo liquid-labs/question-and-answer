@@ -4,6 +4,9 @@
   "description": "",
   "main": "dist/question-and-answer.js",
   "module": "dist/question-and-answer.mjs",
+  "bin": {
+    "qna": "dist/question-and-answer-cli.js"
+  },
   "scripts": {
     "build": "make build",
     "test": "make test",
@@ -21,6 +24,7 @@
   },
   "homepage": "https://github.com/liquid-labs/question-and-answer#readme",
   "dependencies": {
+    "@liquid-labs/catalyst-scripts-node-project": "^1.0.0-alpha.1",
     "@liquid-labs/condition-eval": "^1.0.0-alpha.17",
     "@liquid-labs/terminal-text": "^1.0.0-alpha.1",
     "@liquid-labs/wrap-text": "^1.0.0-alpha.1"
