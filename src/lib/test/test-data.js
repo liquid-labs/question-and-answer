@@ -68,17 +68,30 @@ const badParameterIB = {
   ]
 }
 
+const noQuestionParameterIB = {
+  actions : [
+    { prompt : 'hey' }
+  ]
+}
+
+const statementIB = { actions: [ { statement: 'Hi!'} ]}
+
+const conditionStatementIB = { actions: [ { statement: 'Hi!', condition: 'false' }, { statement: 'Bye!' }]}
+
 export {
   WHATS_YOUR_FAVORITE_INT,
   IS_THE_COMPANY_THE_CLIENT,
   DO_YOU_LIKE_MILK,
   IS_THIS_THE_END,
+  badParameterIB,
+  conditionalQuestionIB,
+  conditionStatementIB,
   cookieParameterIB,
   doubleQuestionIB,
+  noQuestionParameterIB,
   simpleIntQuestionIB,
   simpleIB,
   simpleMapIB,
   sourceMappingIB,
-  conditionalQuestionIB,
-  badParameterIB
+  statementIB
 }
