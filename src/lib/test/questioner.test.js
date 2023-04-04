@@ -7,8 +7,6 @@ import { stdin } from 'mock-stdin'
 import {
   badParameterIB,
   cookieParameterIB,
-  noQuestionParameterIB,
-  noQuestionPromptIB,
   simpleIB,
   simpleMapIB,
   sourceMappingIB,
@@ -16,7 +14,7 @@ import {
   IS_THIS_THE_END,
   WHATS_YOUR_FAVORITE_INT
 } from './test-data'
-import { Questioner, ANSWERED, CONDITION_SKIPPED, DEFINED_SKIPPED } from '../questioner'
+import { Questioner, ANSWERED, CONDITION_SKIPPED } from '../questioner'
 
 const input = stdin()
 
@@ -40,7 +38,7 @@ describe('Questioner', () => {
             expect(output.toString().trim()).toBe('Is the Company the client?\n[y=client/n=contractor]')
           }
           else if (readCount === 1) {
-            expect(output.toString().trim()).toBe('') 
+            expect(output.toString().trim()).toBe('')
           }
           else if (readCount === 2) {
             expect(output.toString().trim()).toBe('Done?\n[y/n]')
@@ -120,7 +118,7 @@ describe('Questioner', () => {
     test.each([
       ['an invalid parameter type', badParameterIB, /unknown parameter type/i]/*,
       ["no 'parameter' for question", noQuestionParameterIB, /does not define a 'parameter'/],
-      ["neither 'prompt' nor 'maps'", noQuestionPromptIB, /defines neither 'prompt' nor 'maps/]*/
+      ["neither 'prompt' nor 'maps'", noQuestionPromptIB, /defines neither 'prompt' nor 'maps/] */
     ])('Will raise an exception on %s.', (desc, ib, exceptionRe) => {
       expect(() => new Questioner({ interrogationBundle : ib })).toThrow(exceptionRe)
     })
@@ -161,7 +159,7 @@ describe('Questioner', () => {
   })
 
   describe('Global mappings', () => {
-    test.each([/*['yes', 'us'], */['no', 'them']])('value map %s -> %s', (answer, value, done) => {
+    test.each([/* ['yes', 'us'], */['no', 'them']])('value map %s -> %s', (answer, value, done) => {
       const questioner = new Questioner({ interrogationBundle : simpleMapIB })
 
       questioner.question().then(() => {

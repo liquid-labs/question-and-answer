@@ -68,12 +68,6 @@ const badParameterIB = {
   ]
 }
 
-const noQuestionParameterIB = {
-  actions : [
-    { prompt : 'hey' }
-  ]
-}
-
 const noQuestionPromptIB = {
   actions : [
     { parameter : 'FOO' }
@@ -92,7 +86,5 @@ export {
   simpleMapIB,
   sourceMappingIB,
   conditionalQuestionIB,
-  badParameterIB,
-  noQuestionParameterIB,
-  noQuestionPromptIB
+  badParameterIB
 }

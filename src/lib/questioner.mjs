@@ -291,7 +291,7 @@ const Questioner = class {
 
     ib.actions.forEach((action, i) => {
       if (action.prompt === undefined && action.maps === undefined) {
-        throw createError.BadRequest(`Action defines neither 'prompt' nor 'maps'; cannot determine type.`)
+        throw createError.BadRequest('Action defines neither \'prompt\' nor \'maps\'; cannot determine type.')
       }
       else if (action.prompt !== undefined) {
         // TODO: replace with some kind of JSON schema verification
@@ -307,7 +307,7 @@ const Questioner = class {
         }
       }
       else if (action.maps !== undefined) {
-        verifyMapping(action) 
+        verifyMapping(action)
       }
     })
   }
