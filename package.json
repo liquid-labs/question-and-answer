@@ -24,7 +24,7 @@
   },
   "homepage": "https://github.com/liquid-labs/question-and-answer#readme",
   "dependencies": {
-    "@liquid-labs/catalyst-scripts-node-project": "^1.0.0-alpha.1",
+    "@liquid-labs/catalyst-scripts-node-project": "^1.0.0-alpha.2",
     "@liquid-labs/condition-eval": "^1.0.0-alpha.17",
     "@liquid-labs/terminal-text": "^1.0.0-alpha.1",
     "@liquid-labs/wrap-text": "^1.0.0-alpha.1"

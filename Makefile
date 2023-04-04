@@ -21,7 +21,7 @@ CATALYST_JS_ROLLUP:=npx rollup
 CATALYST_JS_ESLINT:=npx eslint
 
 ifndef CATALYST_JS_LIB_SRC_PATH
-ifeq ($(SRC)/lib, $(shell ls -d $(SRC)/lib))
+ifeq ($(SRC)/lib, $(shell ls -d $(SRC)/lib 2> /dev/null))
 CATALYST_JS_LIB_SRC_PATH:=$(SRC)/lib
 else ifeq ($(SRC), $(shell ls -d $(SRC)))
 CATALYST_JS_LIB_SRC_PATH:=$(SRC)
@@ -30,7 +30,7 @@ ERROR:=$(error 'CATALYST_JS_LIB_SRC_PATH' is not set and cannot be resolved auto
 endif
 endif
 
-ifeq ($(SRC)/cli, $(shell ls -d $(SRC)/cli))
+ifeq ($(SRC)/cli, $(shell ls -d $(SRC)/cli 2> /dev/null))
 CATALYST_JS_CLI_SRC_PATH:=$(SRC)/cli
 endif
 
@@ -64,18 +64,21 @@ $(CATALYST_JS_LIB): package.json $(CATALYST_JS_LIB_FILES_SRC)
 ifdef CATALYST_JS_CLI_SRC_PATH
 BUILD_TARGETS+=$(CATALYST_JS_CLI)
 
-$(CATALYST_JS_CLI): package.json $(CATALYST_JS_CLI_FILES_SRC)
+$(CATALYST_JS_CLI): package.json $(CATALYST_JS_ALL_FILES_SRC)
 	JS_BUILD_TARGET=$(CATALYST_JS_CLI_SRC_PATH)/index.js \
 	  JS_OUT=$(CATALYST_JS_CLI).tmp \
 		$(CATALYST_JS_ROLLUP) --config $(INSTALL_BASE)/dist/rollup/rollup.config.mjs
 	echo '#!/usr/bin/env node' > $@
 	cat $@.tmp >> $@
 	chmod a+x $@
-	# rm $@.tmp
+	rm $@.tmp
 endif
 
 
 # test
+UNIT_TEST_REPORT:=$(QA)/unit-test.txt
+UNIT_TEST_PASS_MARKER:=$(QA)/.unit-test.passed
+
 $(CATALYST_JS_TEST_DATA_BUILT): test-staging/%: $(CATALYST_JS_LIB_SRC_PATH)/%
 	@echo "Copying test data..."
 	@mkdir -p $(dir $@)
@@ -92,36 +95,41 @@ $(CATALYST_JS_TEST_FILES_BUILT) &: $(CATALYST_JS_ALL_FILES_SRC)
 		$(SRC)
 
 # Tried to use '--testPathPattern=$(TEST_STAGING)' awithout the 'cd $(TEST_STAGING)', but it seemed to have no effect'
-$(QA)/unit-test.txt: $(CATALYST_JS_TEST_FILES_BUILT) $(CATALYST_JS_TEST_DATA_BUILT)
-	mkdir -p $(dir $@)
-	echo -n 'Test git rev: ' > $@
-	git rev-parse HEAD >> $@
-	( set -e; set -o pipefail; \
+$(UNIT_TEST_PASS_MARKER): $(CATALYST_JS_TEST_FILES_BUILT) $(CATALYST_JS_TEST_DATA_BUILT)
+	@rm -f $@
+	@mkdir -p $(dir $@)
+	@echo -n 'Test git rev: ' > $(UNIT_TEST_REPORT)
+	@git rev-parse HEAD >> $(UNIT_TEST_REPORT)
+	@( set -e; set -o pipefail; \
 		( cd $(TEST_STAGING) && $(CATALYST_JS_JEST) \
 			--config=$(INSTALL_BASE)/dist/jest/jest.config.js \
 			--runInBand 2>&1 ) \
-			| tee -a $@ )
+		| tee -a $(UNIT_TEST_REPORT))
+	@touch $@ 
 
-TEST_TARGETS+=$(QA)/unit-test.txt
+TEST_TARGETS+=$(UNIT_TEST_PASS_MARKER)
 
 # lint rules
-$(QA)/lint.txt: $(CATALYST_JS_LIB_ALL_FILES)
-	mkdir -p $(dir $@)
-	echo -n 'Test git rev: ' > $@
-	git rev-parse HEAD >> $@
-	( set -e; set -o pipefail; \
+LINT_REPORT:=$(QA)/lint.txt
+LINT_PASS_MARKER:=$(QA)/.lint.passed
+$(LINT_PASS_MARKER): $(CATALYST_JS_LIB_ALL_FILES)
+	@mkdir -p $(dir $@)
+	@echo -n 'Test git rev: ' > $(LINT_REPORT)
+	@git rev-parse HEAD >> $(LINT_REPORT)
+	@( set -e; set -o pipefail; \
 		$(CATALYST_JS_ESLINT) \
 			--config $(INSTALL_BASE)/dist/eslint/eslint.config.js \
 			--ext .cjs,.js,.mjs,.cjs,.xjs \
 			--ignore-pattern '$(DIST)/**/*' \
 			--ignore-pattern '$(TEST_STAGING)/**/*' \
 			. \
-			| tee -a $@ )
+			| tee -a $(LINT_REPORT))
+	touch $@ 
 
-LINT_TARGETS+=$(QA)/lint.txt
+LINT_TARGETS+=$(LINT_PASS_MARKER)
 
 lint-fix:
-	( set -e; set -o pipefail; \
+	@( set -e; set -o pipefail; \
 		$(CATALYST_JS_ESLINT) \
 			--config $(INSTALL_BASE)/dist/eslint/eslint.config.js \
 			--ext .js,.mjs,.cjs,.xjs \
