@@ -1,5 +1,5 @@
 {
-  "questions" : [
+  "actions" : [
     { "prompt" : "What's your <em>favorite<rst> number?", "parameter" : "IS_CLIENT", "paramType" : "int" }
   ]
 }

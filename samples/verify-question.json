@@ -1,5 +1,5 @@
 {
-  "questions": [
+  "actions": [
     { "prompt": "What is the value?",  "parameter": "VAR"  },
     { "prompt": "Are you sure?", "parameter": "VAR" }
   ]
