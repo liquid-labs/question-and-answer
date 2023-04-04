@@ -74,9 +74,9 @@ const noQuestionParameterIB = {
   ]
 }
 
-const statementIB = { actions: [ { statement: 'Hi!'} ]}
+const statementIB = { actions : [{ statement : 'Hi!' }] }
 
-const conditionStatementIB = { actions: [ { statement: 'Hi!', condition: 'false' }, { statement: 'Bye!' }]}
+const conditionStatementIB = { actions : [{ statement : 'Hi!', condition : 'false' }, { statement : 'Bye!' }] }
 
 export {
   WHATS_YOUR_FAVORITE_INT,

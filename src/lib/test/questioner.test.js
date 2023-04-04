@@ -218,7 +218,7 @@ describe('Questioner', () => {
       child.stdout.resume()
       let readCount = 0
 
-      let complete = () => {
+      const complete = () => {
         child.stdin.write('yes\n')
         if (answer === 'yes') {
           child.stdin.write('yes\n')
@@ -410,7 +410,7 @@ describe('Questioner', () => {
   describe('statements', () => {
     test('prints statement', (done) => {
       const testScriptPath = fsPath.join(__dirname, 'question-runner.js')
-      const child = spawn('node', [testScriptPath, 'statementIB' ])
+      const child = spawn('node', [testScriptPath, 'statementIB'])
 
       child.stdout.resume()
       child.stdout.once('data', (output) => {
@@ -426,7 +426,7 @@ describe('Questioner', () => {
 
     test('properly skips condition skip statements', (done) => {
       const testScriptPath = fsPath.join(__dirname, 'question-runner.js')
-      const child = spawn('node', [testScriptPath, 'conditionStatementIB' ])
+      const child = spawn('node', [testScriptPath, 'conditionStatementIB'])
 
       child.stdout.resume()
       child.stdout.once('data', (output) => {
