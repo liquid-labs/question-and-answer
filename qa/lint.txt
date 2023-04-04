@@ -1,0 +1,7 @@
+Test git rev: ba67ef533b855acffe452c902db464b6ea813a1c
+
+/Users/zane/.liq/playground/liquid-labs/question-and-answer/src/lib/test/test-data.js
+  71:7  error  'noQuestionPromptIB' is assigned a value but never used  no-unused-vars
+
+✖ 1 problem (1 error, 0 warnings)
+
