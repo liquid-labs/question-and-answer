@@ -189,6 +189,9 @@ const Questioner = class {
       else if (action.maps !== undefined) { // it's a mapping
         await this.#processMapping(action)
       }
+      else if (action.statement !== undefined) { // it's a statement
+        this.#output.write(formatTerminalText(action.statement + '\n'))
+      }
       else {
         throw createError.BadRequest(`Could not determine action type of ${action}.`)
       }
@@ -290,8 +293,8 @@ const Questioner = class {
     const ib = this.#interrogationBundle
 
     ib.actions.forEach((action, i) => {
-      if (action.prompt === undefined && action.maps === undefined) {
-        throw createError.BadRequest('Action defines neither \'prompt\' nor \'maps\'; cannot determine type.')
+      if (action.prompt === undefined && action.maps === undefined && action.statement === undefined) {
+        throw createError.BadRequest('Action defines neither \'prompt\', \'maps\', nor \'statement\'; cannot determine type.')
       }
       else if (action.prompt !== undefined) {
         // TODO: replace with some kind of JSON schema verification

@@ -7,6 +7,7 @@ import { stdin } from 'mock-stdin'
 import {
   badParameterIB,
   cookieParameterIB,
+  noQuestionParameterIB,
   simpleIB,
   simpleMapIB,
   sourceMappingIB,
@@ -116,9 +117,8 @@ describe('Questioner', () => {
     })
 
     test.each([
-      ['an invalid parameter type', badParameterIB, /unknown parameter type/i]/*,
-      ["no 'parameter' for question", noQuestionParameterIB, /does not define a 'parameter'/],
-      ["neither 'prompt' nor 'maps'", noQuestionPromptIB, /defines neither 'prompt' nor 'maps/] */
+      ['an invalid parameter type', badParameterIB, /unknown parameter type/i],
+      ["no 'parameter' for question", noQuestionParameterIB, /does not define a 'parameter'/]
     ])('Will raise an exception on %s.', (desc, ib, exceptionRe) => {
       expect(() => new Questioner({ interrogationBundle : ib })).toThrow(exceptionRe)
     })
@@ -158,7 +158,7 @@ describe('Questioner', () => {
     })
   })
 
-  describe('Global mappings', () => {
+  describe('Mappings', () => {
     test.each([/* ['yes', 'us'], */['no', 'them']])('value map %s -> %s', (answer, value, done) => {
       const questioner = new Questioner({ interrogationBundle : simpleMapIB })
 
@@ -218,7 +218,7 @@ describe('Questioner', () => {
       child.stdout.resume()
       let readCount = 0
 
-      let complete = () => {
+      const complete = () => {
         child.stdin.write('yes\n')
         if (answer === 'yes') {
           child.stdin.write('yes\n')
@@ -405,5 +405,39 @@ describe('Questioner', () => {
     test('are passed from maps', () =>
       expect(questioner.getResult('ORG_COMMON_NAME').handling).toBe('bundle')
     )
+  })
+
+  describe('statements', () => {
+    test('prints statement', (done) => {
+      const testScriptPath = fsPath.join(__dirname, 'question-runner.js')
+      const child = spawn('node', [testScriptPath, 'statementIB'])
+
+      child.stdout.resume()
+      child.stdout.once('data', (output) => {
+        try {
+          expect(output.toString().trim()).toBe('Hi!')
+        }
+        finally {
+          child.kill('SIGINT')
+          done()
+        }
+      })
+    })
+
+    test('properly skips condition skip statements', (done) => {
+      const testScriptPath = fsPath.join(__dirname, 'question-runner.js')
+      const child = spawn('node', [testScriptPath, 'conditionStatementIB'])
+
+      child.stdout.resume()
+      child.stdout.once('data', (output) => {
+        try {
+          expect(output.toString().trim()).toBe('Bye!')
+        }
+        finally {
+          child.kill('SIGINT')
+          done()
+        }
+      })
+    })
   })
 })
