@@ -1,0 +1,24 @@
+Test git rev: 16b66d740469663ecad00caab3f422bccde84579
+
+/Users/zane/.liq/playground/liquid-labs/question-and-answer/src/lib/test/questioner.test.js
+  221:11  error  'complete' is never reassigned. Use 'const' instead  prefer-const
+  413:65  error  There should be no space before ']'                  array-bracket-spacing
+  429:74  error  There should be no space before ']'                  array-bracket-spacing
+
+/Users/zane/.liq/playground/liquid-labs/question-and-answer/src/lib/test/test-data.js
+  77:23   error  Missing space after key 'actions'    key-spacing
+  77:33   error  There should be no space after '['   array-bracket-spacing
+  77:36   error  Missing space after key 'statement'  key-spacing
+  77:52   error  A space is required before '}'       object-curly-spacing
+  77:53   error  There should be no space before ']'  array-bracket-spacing
+  77:55   error  A space is required before '}'       object-curly-spacing
+  79:32   error  Missing space after key 'actions'    key-spacing
+  79:42   error  There should be no space after '['   array-bracket-spacing
+  79:45   error  Missing space after key 'statement'  key-spacing
+  79:63   error  Missing space after key 'condition'  key-spacing
+  79:87   error  Missing space after key 'statement'  key-spacing
+  79:107  error  A space is required before '}'       object-curly-spacing
+
+✖ 15 problems (15 errors, 0 warnings)
+  15 errors and 0 warnings potentially fixable with the `--fix` option.
+
