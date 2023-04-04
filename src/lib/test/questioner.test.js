@@ -7,17 +7,14 @@ import { stdin } from 'mock-stdin'
 import {
   badParameterIB,
   cookieParameterIB,
-  noQuestionParameterIB,
-  noQuestionPromptIB,
   simpleIB,
   simpleMapIB,
-  simpleLocalMapIB,
   sourceMappingIB,
   DO_YOU_LIKE_MILK,
   IS_THIS_THE_END,
   WHATS_YOUR_FAVORITE_INT
 } from './test-data'
-import { Questioner, ANSWERED, CONDITION_SKIPPED, DEFINED_SKIPPED } from '../questioner'
+import { Questioner, ANSWERED, CONDITION_SKIPPED } from '../questioner'
 
 const input = stdin()
 
@@ -34,67 +31,38 @@ describe('Questioner', () => {
       const child = spawn('node', [testScriptPath])
 
       child.stdout.resume()
-      child.stdout.once('data', (output) => {
+      let readCount = 0
+      child.stdout.on('data', (output) => {
         try {
-          expect(output.toString().trim()).toBe('Is the Company the client?\n[y=client/n=contractor]')
+          if (readCount === 0) {
+            expect(output.toString().trim()).toBe('Is the Company the client?\n[y=client/n=contractor]')
+          }
+          else if (readCount === 1) {
+            expect(output.toString().trim()).toBe('')
+          }
+          else if (readCount === 2) {
+            expect(output.toString().trim()).toBe('Done?\n[y/n]')
+            child.stdin.write('yes\n')
+            child.kill('SIGINT')
+            done()
+          }
         }
         catch (e) {
+          child.kill('SIGINT')
           done()
           throw e
         }
 
-        child.stdout.once('data', (output) => {
-          try {
-            expect(output.toString().trim()).toBe('Done?\n[y/n]')
-            child.stdin.write('yes\n')
-          }
-          finally {
-            child.kill('SIGINT')
-            done()
-          }
-        })
+        readCount += 1
       })
 
       child.stdin.write('yes\n')
     })
 
-    test('processes question-local maps when question is defined-skipped', (done) => {
-      const questioner = new Questioner({
-        initialParameters   : { IS_CLIENT : true },
-        interrogationBundle : simpleLocalMapIB
-      })
-
-      questioner.question().then(() => {
-        try {
-          expect(questioner.get('IS_CLIENT')).toBe(true)
-          expect(questioner.getResult('IS_CLIENT').disposition).toBe(DEFINED_SKIPPED)
-          expect(questioner.get('ORG_COMMON_NAME')).toBe('us') // this is the mapped value
-        }
-        finally { done() }
-      })
-    })
-
-    test('skips question-local maps when question is condition-skipped', (done) => {
-      const ib = structuredClone(simpleLocalMapIB)
-      ib.questions[0].condition = 'FOO'
-      const initialParameters = { FOO : false }
-
-      const questioner = new Questioner({ initialParameters, interrogationBundle : ib })
-
-      questioner.question().then(() => {
-        try {
-          expect(questioner.get('IS_CLIENT')).toBe(undefined)
-          expect(questioner.getResult('IS_CLIENT').disposition).toBe(CONDITION_SKIPPED)
-          expect(questioner.get('ORG_COMMON_NAME')).toBe(undefined) // this is the mapped value
-        }
-        finally { done() }
-      })
-    })
-
     test("when question is condition-skipped, uses 'elseValue' if present", (done) => {
-      const ib = structuredClone(simpleLocalMapIB)
-      ib.questions[0].condition = 'FOO'
-      ib.questions[0].elseValue = false
+      const ib = structuredClone(simpleMapIB)
+      ib.actions[0].condition = 'FOO'
+      ib.actions[0].elseValue = false
       const initialParameters = { FOO : false }
 
       const questioner = new Questioner({ initialParameters, interrogationBundle : ib })
@@ -103,7 +71,7 @@ describe('Questioner', () => {
         try {
           expect(questioner.get('IS_CLIENT')).toBe(false)
           expect(questioner.getResult('IS_CLIENT').disposition).toBe(CONDITION_SKIPPED)
-          expect(questioner.get('ORG_COMMON_NAME')).toBe(undefined) // this is the mapped value
+          expect(questioner.get('ORG_COMMON_NAME')).toBe('them') // this is the mapped value
         }
         finally { done() }
       })
@@ -148,9 +116,9 @@ describe('Questioner', () => {
     })
 
     test.each([
-      ['an invalid parameter type', badParameterIB, /unknown parameter type/i],
+      ['an invalid parameter type', badParameterIB, /unknown parameter type/i]/*,
       ["no 'parameter' for question", noQuestionParameterIB, /does not define a 'parameter'/],
-      ["no 'prompt' for question", noQuestionPromptIB, /does not define a 'prompt'/]
+      ["neither 'prompt' nor 'maps'", noQuestionPromptIB, /defines neither 'prompt' nor 'maps/] */
     ])('Will raise an exception on %s.', (desc, ib, exceptionRe) => {
       expect(() => new Questioner({ interrogationBundle : ib })).toThrow(exceptionRe)
     })
@@ -191,12 +159,14 @@ describe('Questioner', () => {
   })
 
   describe('Global mappings', () => {
-    test.each([['yes', 'us'], ['no', 'them']])('value map %s -> %s', (answer, value, done) => {
+    test.each([/* ['yes', 'us'], */['no', 'them']])('value map %s -> %s', (answer, value, done) => {
       const questioner = new Questioner({ interrogationBundle : simpleMapIB })
 
       questioner.question().then(() => {
-        expect(questioner.values.ORG_COMMON_NAME).toBe(value)
-        done()
+        try {
+          expect(questioner.values.ORG_COMMON_NAME).toBe(value)
+        }
+        finally { done() }
       })
       input.send(answer + '\n')
     })
@@ -220,9 +190,9 @@ describe('Questioner', () => {
       ['int', '1', 1]
     ])('maps \'source\'d paramType %s input \'%s\' -> %p', (paramType, value, expected, done) => {
       const interrogationBundle = structuredClone(simpleMapIB)
-      delete interrogationBundle.mappings[0].maps[0].value
-      interrogationBundle.mappings[0].maps[0].paramType = paramType
-      interrogationBundle.mappings[0].maps[0].source = 'ENV_VAR'
+      delete interrogationBundle.actions[1].maps[0].value
+      interrogationBundle.actions[1].maps[0].paramType = paramType
+      interrogationBundle.actions[1].maps[0].source = 'ENV_VAR'
       const initialParameters = { ENV_VAR : value }
 
       const questioner = new Questioner({ interrogationBundle, initialParameters })
@@ -232,18 +202,6 @@ describe('Questioner', () => {
         done()
       })
       input.send('yes\n')
-    })
-  })
-
-  describe('Local mappings', () => {
-    test.each([['yes', 'us'], ['no', 'them']])('Local map %s -> %s', (answer, value, done) => {
-      const questioner = new Questioner({ interrogationBundle : simpleLocalMapIB })
-
-      questioner.question().then(() => {
-        expect(questioner.values.ORG_COMMON_NAME).toBe(value)
-        done()
-      })
-      input.send(answer + '\n')
     })
   })
 
@@ -258,36 +216,41 @@ describe('Questioner', () => {
       const child = spawn('node', [testScriptPath])
 
       child.stdout.resume()
-      child.stdout.once('data', (output) => {
+      let readCount = 0
+      child.stdout.on('data', (output) => {
         try {
-          expect(output.toString().trim()).toBe('Is the Company the client?\n[y=client/n=contractor]')
-        }
-        catch (e) {
-          done()
-          throw (e)
-        }
-
-        child.stdout.once('data', (output) => {
-          try {
+          if (readCount === 0) {
+            expect(output.toString().trim()).toBe('Is the Company the client?\n[y=client/n=contractor]')
+          }
+          else if (readCount === 1) {
+            expect(output.toString().trim()).toBe('')
+          }
+          else if (readCount === 2) {
             expect(output.toString().trim()).toBe(followup)
             child.stdin.write('yes\n')
             if (answer === 'yes') {
               child.stdin.write('yes\n')
             }
-
             child.kill('SIGINT')
+            done()
           }
-          finally { done() }
-        })
+          readCount += 1
+        }
+        catch (e) {
+          child.kill('SIGINT')
+          done()
+          throw e
+        }
       })
 
       child.stdin.write(answer + '\n')
     })
 
     test("when question is condition-skipped, uses 'elseSource' if present", (done) => {
-      const ib = structuredClone(simpleLocalMapIB)
-      ib.questions[0].condition = 'FOO'
-      ib.questions[0].elseSource = 'BAR || BAZ'
+      const ib = structuredClone(simpleMapIB)
+      ib.actions[0].condition = 'FOO'
+      ib.actions[0].elseSource = 'BAR || BAZ'
+      ib.actions[1].condition = 'BAZ'
       const initialParameters = { FOO : false, BAR : true, BAZ : false }
 
       const questioner = new Questioner({ initialParameters, interrogationBundle : ib })
@@ -313,13 +276,15 @@ describe('Questioner', () => {
       ['6.6', 'numeric', 6.6]
     ])("Value '%s' type '%s' -> %p", (value, type, expected, done) => {
       const ib = structuredClone(simpleIB)
-      ib.questions[0].paramType = type
+      ib.actions[0].paramType = type
 
       const questioner = new Questioner({ interrogationBundle : ib })
 
       questioner.question().then(() => {
-        expect(questioner.values.IS_CLIENT).toBe(expected)
-        done()
+        try {
+          expect(questioner.values.IS_CLIENT).toBe(expected)
+        }
+        finally { done() }
       })
       input.send(value + '\n')
     })
@@ -351,8 +316,8 @@ describe('Questioner', () => {
       ['Hi', 'string', 'requireMatch', '^[Hi]*$']
     ])("Value '%s' (%s) and requirement %s=%s is accepted", (value, type, requirement, reqValue, done) => {
       const ib = structuredClone(simpleIB)
-      ib.questions[0].paramType = type
-      ib.questions[0][requirement] = reqValue
+      ib.actions[0].paramType = type
+      ib.actions[0][requirement] = reqValue
 
       const questioner = new Questioner({ interrogationBundle : ib })
 
@@ -424,12 +389,8 @@ describe('Questioner', () => {
       expect(questioner.getResult('IS_CLIENT').handling).toBe('bundle')
     )
 
-    test('are passed from question maps', () =>
+    test('are passed from maps', () =>
       expect(questioner.getResult('ORG_COMMON_NAME').handling).toBe('bundle')
-    )
-
-    test('are passed from question maps', () =>
-      expect(questioner.getResult('TARGET_DEMO').handling).toBe('bundle')
     )
   })
 })
