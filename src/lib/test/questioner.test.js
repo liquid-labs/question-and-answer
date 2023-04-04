@@ -217,22 +217,35 @@ describe('Questioner', () => {
 
       child.stdout.resume()
       let readCount = 0
+
+      let complete = () => {
+        child.stdin.write('yes\n')
+        if (answer === 'yes') {
+          child.stdin.write('yes\n')
+        }
+        child.kill('SIGINT')
+        done()
+      }
+
       child.stdout.on('data', (output) => {
         try {
+          output = output.toString().trim()
           if (readCount === 0) {
-            expect(output.toString().trim()).toBe('Is the Company the client?\n[y=client/n=contractor]')
+            expect(output).toBe('Is the Company the client?\n[y=client/n=contractor]')
           }
           else if (readCount === 1) {
-            expect(output.toString().trim()).toBe('')
+            // the intermediate space can be combined with the followup on the read
+            try {
+              expect(output).toBe('')
+            }
+            catch (e) {
+              expect(output).toBe(followup)
+              complete()
+            }
           }
           else if (readCount === 2) {
-            expect(output.toString().trim()).toBe(followup)
-            child.stdin.write('yes\n')
-            if (answer === 'yes') {
-              child.stdin.write('yes\n')
-            }
-            child.kill('SIGINT')
-            done()
+            expect(output).toBe(followup)
+            complete()
           }
           readCount += 1
         }
