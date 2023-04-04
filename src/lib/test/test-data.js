@@ -28,37 +28,29 @@ const commonMapping = [
 ]
 
 const simpleMapIB = structuredClone(simpleIB)
-simpleMapIB.mappings = structuredClone(commonMapping)
-
-const simpleLocalMapIB = structuredClone(simpleIB)
-simpleLocalMapIB.actions[0].mappings = structuredClone(commonMapping)
+simpleMapIB.actions.push(...structuredClone(commonMapping))
 
 const sourceMappingIB = structuredClone(simpleIntQuestionIB)
-sourceMappingIB.actions[0].mappings = [ // we would do this as a question, but to get more than one input line, we
+sourceMappingIB.actions.push(...[ // we would do this as a question, but to get more than one input line, we
   // have to do the spawn process trick, but we want to keeep this in-process so we can check the values
   {
     maps : [
       { parameter : 'HATED_INT', source : '0 - FAVE_INT', paramType : 'int' }
     ]
-  }
-]
-sourceMappingIB.mappings = [
+  },
   {
     maps : [
       { parameter : 'FAVE_DIFF', source : 'FAVE_INT - HATED_INT', paramType : 'int' },
       { parameter : 'IS_FAVE_NOT_ZERO', source : 'FAVE_INT', paramType : 'bool' }
     ]
   }
-]
+])
 
 const cookieParameterIB = structuredClone(simpleIB)
-cookieParameterIB.mappings = structuredClone(commonMapping)
-cookieParameterIB.actions[0].mappings = structuredClone(commonMapping)
-cookieParameterIB.mappings[0].maps[0].parameter = 'TARGET_DEMO'
-cookieParameterIB.mappings[1].maps[0].parameter = 'TARGET_DEMO'
+cookieParameterIB.actions.push(...structuredClone(commonMapping))
 cookieParameterIB.actions[0].handling = 'bundle'
-cookieParameterIB.mappings[0].maps[0].handling = 'bundle'
-cookieParameterIB.actions[0].mappings[0].maps[0].handling = 'bundle'
+cookieParameterIB.actions[1].maps[0].handling = 'bundle'
+cookieParameterIB.actions[2].maps[0].handling = 'bundle'
 
 const doubleQuestionIB = structuredClone(simpleIB)
 doubleQuestionIB.actions.push({ prompt : 'Really?', parameter : 'IS_CLIENT', paramType : 'bool' })
@@ -98,7 +90,6 @@ export {
   simpleIntQuestionIB,
   simpleIB,
   simpleMapIB,
-  simpleLocalMapIB,
   sourceMappingIB,
   conditionalQuestionIB,
   badParameterIB,
