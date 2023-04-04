@@ -1,5 +1,5 @@
 {
-  "questions": [
+  "actions": [
     { "prompt": "How do you greet someone?",  "parameter": "EXACT_STRING", "requireExact": "Hi" },
     { "prompt": "How many moons does the earth have?", "paramType": "int", "parameter": "EXACT_INT", "requireExact": 1 },
     { "prompt": "How many moons does the earth have?", "paramType": "int", "parameter": "EXACT_INT", "requireExact": 1 },

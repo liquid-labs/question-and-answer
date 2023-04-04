@@ -68,12 +68,6 @@ const badParameterIB = {
   ]
 }
 
-const noQuestionPromptIB = {
-  actions : [
-    { parameter : 'FOO' }
-  ]
-}
-
 export {
   WHATS_YOUR_FAVORITE_INT,
   IS_THE_COMPANY_THE_CLIENT,
