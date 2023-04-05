@@ -1,0 +1,8 @@
+{
+  "actions": [
+    { "prompt": "How do you greet someone?",  "parameter": "EXACT_STRING" },
+    { "prompt": "How many moons does the earth have?", "paramType": "int", "parameter": "EXACT_INT" },
+    { "prompt": "How many moons does the earth have?", "paramType": "int", "parameter": "EXACT_INT" },
+    { "review": "questions" }
+  ]
+}
