@@ -14,5 +14,5 @@ const envFile = process.argv[3];
   const questioner = new Questioner({ initialParameters, interrogationBundle })
   await questioner.question()
 
-  console.log(questioner.values)
+  console.log('\n' + JSON.stringify(questioner.values, null, '  ') + '\n' + JSON.stringify(questioner.results, null, '  '))
 })()

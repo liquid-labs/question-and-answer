@@ -50,6 +50,7 @@ const Questioner = class {
   #noSkipDefined
   #results = []
   #width
+  #wrap
 
   constructor({
     input = process.stdin,
@@ -61,12 +62,19 @@ const Questioner = class {
   } = {}) {
     this.#input = input
     this.#output = output
-    this.#interrogationBundle = interrogationBundle
+    this.#interrogationBundle = structuredClone(interrogationBundle)
     this.#initialParameters = initialParameters
     this.#noSkipDefined = noSkipDefined
     this.#width = width
+    this.#wrap = (text, options) => wrap(text, Object.assign({ width : this.#width, ignoreTags : true }, options))
 
     this.#verifyInterrogationBundle()
+
+    let index = 0
+    for (const action of this.#interrogationBundle.actions) {
+      action._index = index
+      index += 1
+    }
   }
 
   #addResult({ value, source }) {
@@ -88,19 +96,19 @@ const Questioner = class {
 
     try {
       const type = q.paramType || 'string'
-      let currValue = this.get(q.parameter)
-      if (!verifyAnswerForm({ type, value : currValue })) {
-        currValue = undefined
+      let defaultValue = this.get(q.parameter) || q.default
+      if (!verifyAnswerForm({ type, value : defaultValue })) {
+        defaultValue = undefined
       }
 
       let prompt = q.prompt
       let hint = ''
-      if (currValue !== undefined) {
+      if (defaultValue !== undefined) {
         if (q.paramType?.match(/bool(?:ean)?/i)) {
-          hint = '[' + (currValue === true ? 'Y/n|-' : 'y/N|-') + '] '
+          hint = '[' + (defaultValue === true ? 'Y/n|-' : 'y/N|-') + '] '
         }
         else {
-          hint = `[${currValue}|-] `
+          hint = `[${defaultValue}|-] `
         }
       }
       else if (prompt.match(/\[[^]+\] *$/)) { // do we already have a hint?
@@ -112,15 +120,22 @@ const Questioner = class {
       }
 
       // the '\n' puts the input cursor below the prompt for consistency
-      prompt = wrap(prompt, { width : this.#width }) + '\n' + hint
+      prompt = this.#wrap(prompt) + '\n' + hint
 
       rl.setPrompt(formatTerminalText(prompt))
       rl.prompt()
 
       const it = rl[Symbol.asyncIterator]()
-      let answer = (await it.next()).value.trim() || currValue || ''
+      let answer = (await it.next()).value.trim() || defaultValue || ''
       if (answer === '-') {
         answer = undefined
+        delete q.default
+      }
+      else if (answer === '') {
+        answer = defaultValue
+      }
+      else {
+        q.default = answer
       }
 
       // first verify form as a string
@@ -137,7 +152,7 @@ const Questioner = class {
       }
       else { // the 'answer form' is invalid; let's try again
         verifyResult = '<warn>' + verifyResult + '<rst>'
-        verifyResult = wrap(verifyResult, { width : this.#width }) + '\n'
+        verifyResult = this.#wrap(verifyResult) + '\n'
         this.#output.write(formatTerminalText(verifyResult))
         rl.close() // we'll create a new one
         this.#output.write('\n')
@@ -187,10 +202,26 @@ const Questioner = class {
         await this.#askQuestion(action)
       }
       else if (action.maps !== undefined) { // it's a mapping
-        await this.#processMapping(action)
+        this.#processMapping(action)
       }
       else if (action.statement !== undefined) { // it's a statement
-        this.#output.write(formatTerminalText(action.statement + '\n'))
+        this.#output.write(formatTerminalText(this.#wrap(action.statement) + '\n'))
+      }
+      else if (action.review !== undefined) { // it's a review
+        const [result, included] = await this.#processReview(action)
+        if (result === true && action.parameter !== undefined) {
+          this.#addResult({ source : action, value : result })
+        }
+        else if (result === false) {
+          const toNix = included.reduce((acc, i) => {
+            acc[i.parameter] = true
+            return acc
+          }, {})
+          this.#results = this.#results.filter((r) => !(r.parameter in toNix))
+          console.log('filtered results:', this.#results, '\ntoNix:', toNix) // DEBUG
+          await this.#processActions()
+          break
+        }
       }
       else {
         throw createError.BadRequest(`Could not determine action type of ${action}.`)
@@ -223,6 +254,10 @@ const Questioner = class {
 
   getResult(parameter) {
     return this.#results.find((r) => r.parameter === parameter)
+  }
+
+  #getResultByIndex(index) {
+    return this.#results.find((r) => r._index === index)
   }
 
   has(parameter) {
@@ -264,6 +299,66 @@ const Questioner = class {
     }
   }
 
+  async #processReview(reviewAction) {
+    const reviewType = reviewAction.review
+    const included = []
+    for (const action of this.#interrogationBundle.actions) {
+      if (action === reviewAction) {
+        break
+      }
+      else if (action.review !== undefined) {
+        included.slice(0, included.length) // truncate
+        continue
+      }
+      const result = this.#getResultByIndex(action._index)
+      const include = action.statement === undefined
+        && (reviewType === 'all' || action.prompt !== undefined)
+        && !result.disposition.endsWith('skipped')
+
+      if (include) {
+        included.push(action)
+      }
+    }
+    if (included.length === 0) {
+      return [true, []]
+    }
+
+    let reviewText = ''
+    for (const action of included) {
+      if (reviewText.length > 0) {
+        reviewText += '\n'
+      }
+
+      if (action.prompt !== undefined) {
+        reviewText += action.prompt + '\n'
+      }
+      reviewText += `[<bold>${action.parameter}<rst>]: <em>${this.get(action.parameter)}<rst>\n`
+    }
+
+    const header = `<h2>Review ${included.length} ${reviewType === 'all' ? 'values' : 'answers'}:<rst>`
+
+    this.#output.write(formatTerminalText(this.#wrap(header + '\n' + reviewText, { hangingIndent : 2 })))
+
+    while (true) {
+      const rl = readline.createInterface({ input : this.#input, output : this.#output, terminal : false })
+      try {
+        rl.setPrompt(formatTerminalText('\n<bold>Verified?<rst> [y/n] '))
+        rl.prompt()
+
+        const it = rl[Symbol.asyncIterator]()
+        const answer = (await it.next()).value.trim()
+        const result = verifyAnswerForm({ type : 'boolean', value : answer })
+        if (result === true) {
+          return [transformStringValue({ paramType : 'boolean', value : answer }), included]
+        }
+        else {
+          this.#output.write(formatTerminalText(this.#wrap(`<warn>${result}<rst>`) + '\n'))
+        }
+      }
+      finally { rl.close() }
+    }
+  }
+
   async question() {
     if (this.#interrogationBundle === undefined) {
       throw createError.BadRequest("Must set 'interrogation bundle' prior to invoking the questioning.")
@@ -293,8 +388,11 @@ const Questioner = class {
     const ib = this.#interrogationBundle
 
     ib.actions.forEach((action, i) => {
-      if (action.prompt === undefined && action.maps === undefined && action.statement === undefined) {
-        throw createError.BadRequest('Action defines neither \'prompt\', \'maps\', nor \'statement\'; cannot determine type.')
+      if (action.prompt === undefined
+          && action.maps === undefined
+          && action.statement === undefined
+          && action.review === undefined) {
+        throw createError.BadRequest('Action defines neither \'prompt\', \'maps\', \'statement\', nor \'review\'; cannot determine type.')
       }
       else if (action.prompt !== undefined) {
         // TODO: replace with some kind of JSON schema verification
@@ -311,6 +409,11 @@ const Questioner = class {
       }
       else if (action.maps !== undefined) {
         verifyMapping(action)
+      }
+      else if (action.review !== undefined) {
+        if (!['all', 'questions'].includes(action.review)) {
+          throw createError.BadRequest(`Unknown review type '${action.review}'; must be 'all' or 'questions'.`)
+        }
       }
     })
   }
@@ -351,6 +454,9 @@ const verifyAnswerForm = ({ type, value }) => {
     if (!value?.match(/\s*(?:y(?:es)?|n(?:o)?|t(?:rue)?|f(?:alse)?)\s*/i)) {
       return `'${value}' is not a valid boolean. Try yes|no|true|false`
     }
+  }
+  else if (type !== undefined && type !== 'string') {
+    throw new Error(`Cannot verify unknown type: '${type}'`)
   }
 
   return true // we've passed the gauntlet
