@@ -66,7 +66,7 @@ const Questioner = class {
     this.#initialParameters = initialParameters
     this.#noSkipDefined = noSkipDefined
     this.#width = width
-    this.#wrap = (text, options) => wrap(text, Object.assign({ width: this.#width, ignoreTags: true }, options))
+    this.#wrap = (text, options) => wrap(text, Object.assign({ width : this.#width, ignoreTags : true }, options))
 
     this.#verifyInterrogationBundle()
 
@@ -210,7 +210,7 @@ const Questioner = class {
       else if (action.review !== undefined) { // it's a review
         const [result, included] = await this.#processReview(action)
         if (result === true && action.parameter !== undefined) {
-          this.#addResult({ source: action, value: result })
+          this.#addResult({ source : action, value : result })
         }
         else if (result === false) {
           const toNix = included.reduce((acc, i) => {
@@ -311,7 +311,7 @@ const Questioner = class {
         continue
       }
       const result = this.#getResultByIndex(action._index)
-      const include = action.statement === undefined 
+      const include = action.statement === undefined
         && (reviewType === 'all' || action.prompt !== undefined)
         && !result.disposition.endsWith('skipped')
 
@@ -320,7 +320,7 @@ const Questioner = class {
       }
     }
     if (included.length === 0) {
-      return [ true, [] ]
+      return [true, []]
     }
 
     let reviewText = ''
@@ -337,7 +337,7 @@ const Questioner = class {
 
     const header = `<h2>Review ${included.length} ${reviewType === 'all' ? 'values' : 'answers'}:<rst>`
 
-    this.#output.write(formatTerminalText(this.#wrap(header + '\n' + reviewText, { hangingIndent: 2 })))
+    this.#output.write(formatTerminalText(this.#wrap(header + '\n' + reviewText, { hangingIndent : 2 })))
 
     while (true) {
       const rl = readline.createInterface({ input : this.#input, output : this.#output, terminal : false })
@@ -347,9 +347,9 @@ const Questioner = class {
 
         const it = rl[Symbol.asyncIterator]()
         const answer = (await it.next()).value.trim()
-        const result = verifyAnswerForm({ type: 'boolean', value: answer })
+        const result = verifyAnswerForm({ type : 'boolean', value : answer })
         if (result === true) {
-          return [ transformStringValue({ paramType: 'boolean', value: answer }), included ]
+          return [transformStringValue({ paramType : 'boolean', value : answer }), included]
         }
         else {
           this.#output.write(formatTerminalText(this.#wrap(`<warn>${result}<rst>`) + '\n'))
@@ -388,9 +388,9 @@ const Questioner = class {
     const ib = this.#interrogationBundle
 
     ib.actions.forEach((action, i) => {
-      if (action.prompt === undefined 
-          && action.maps === undefined 
-          && action.statement === undefined 
+      if (action.prompt === undefined
+          && action.maps === undefined
+          && action.statement === undefined
           && action.review === undefined) {
         throw createError.BadRequest('Action defines neither \'prompt\', \'maps\', \'statement\', nor \'review\'; cannot determine type.')
       }
@@ -411,7 +411,7 @@ const Questioner = class {
         verifyMapping(action)
       }
       else if (action.review !== undefined) {
-        if (![ 'all', 'questions' ].includes(action.review)) {
+        if (!['all', 'questions'].includes(action.review)) {
           throw createError.BadRequest(`Unknown review type '${action.review}'; must be 'all' or 'questions'.`)
         }
       }
