@@ -1,0 +1,145 @@
+Test git rev: f2b1c5e94b93e40a96c3cafb5df6906035370348
+  console.log
+    what
+
+      at log (../src/lib/questioner.mjs:406:19)
+          at Array.forEach (<anonymous>)
+
+Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] 
+What's your favorite int?
+
+
+What's your favorite int?
+
+
+What's your favorite int?
+
+
+Is the Company the client?
+[y=client/n=contractor] 
+Is the Company the client?
+[y=client/n=contractor] 
+Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] 
+PASS lib/test/questioner.test.js
+  Questioner
+    QnA flow
+      ✓ skips questions with a pre-existing parameter value (83 ms)
+      ✓ when question is condition-skipped, uses 'elseValue' if present (2 ms)
+      ✓ Will re-ask questions when answer form invalid (74 ms)
+      ✓ Will raise an exception on an invalid parameter type. (61 ms)
+      ✓ Will raise an exception on no 'parameter' for question. (1 ms)
+    boolean questions
+      ✓ simple boolean question answer 'y' -> true (8 ms)
+      ✓ simple boolean question answer 'n' -> false (2 ms)
+      ✓ simple boolean question answer 'Y' -> true (1 ms)
+      ✓ simple boolean question answer 'N' -> false (1 ms)
+      ✓ simple boolean question answer 't' -> true (1 ms)
+      ✓ simple boolean question answer 'T' -> true (1 ms)
+      ✓ simple boolean question answer 'f' -> false (1 ms)
+      ✓ simple boolean question answer 'F' -> false
+      ✓ simple boolean question answer 'yes' -> true (1 ms)
+      ✓ simple boolean question answer 'Yes' -> true (1 ms)
+      ✓ simple boolean question answer 'no' -> false (1 ms)
+      ✓ simple boolean question answer 'No' -> false (2 ms)
+      ✓ simple boolean question answer 'true' -> true (1 ms)
+      ✓ simple boolean question answer 'True' -> true
+      ✓ simple boolean question answer 'false' -> false (1 ms)
+      ✓ simple boolean question answer 'False' -> false (1 ms)
+    Mappings
+      ✓ value map no -> them (1 ms)
+      ✓ source map 'FAVE_INT'=1, yields 'FAVE_DIFF'=2' (3 ms)
+      ✓ source map 'FAVE_INT'=1, yields 'IS_FAVE_NOT_ZERO'=true' (1 ms)
+      ✓ source map 'FAVE_INT'=0, yields 'IS_FAVE_NOT_ZERO'=false' (1 ms)
+      ✓ maps 'source'd paramType bool input 'y' -> true (1 ms)
+      ✓ maps 'source'd paramType int input '1' -> 1 (1 ms)
+    Conditional questions
+      ✓ Conditional question yes -> Do you like milk? (73 ms)
+      ✓ Conditional question no -> Is this the end? (67 ms)
+      ✓ when question is condition-skipped, uses 'elseSource' if present (1 ms)
+    Value transforms
+      ✓ Value 'true' type 'boolean' -> true (7 ms)
+      ✓ Value 'true' type 'bool' -> true
+      ✓ Value 'true' type 'string' -> "true"
+      ✓ Value '5' type 'integer' -> 5 (1 ms)
+      ✓ Value '5.5' type 'float' -> 5.5 (1 ms)
+      ✓ Value '6.6' type 'numeric' -> 6.6
+    answer requirements
+      ✓ Value 'Hi' (string) and requirement requireSomething=true is accepted
+      ✓ Value '1' (int) and requirement requireSomething=true is accepted (1 ms)
+      ✓ Value 'true' (bool) and requirement requireSomething=true is accepted (1 ms)
+      ✓ Value 'Hi' (string) and requirement requireTruthy=true is accepted
+      ✓ Value '1' (int) and requirement requireTruthy=true is accepted
+      ✓ Value 'true' (bool) and requirement requireTruthy=true is accepted (1 ms)
+      ✓ Value 'Hi' (string) and requirement requireExact=Hi is accepted
+      ✓ Value '1' (int) and requirement requireExact=1 is accepted (1 ms)
+      ✓ Value 'true' (bool) and requirement requireExact=true is accepted
+      ✓ Value 'false' (bool) and requirement requireExact=false is accepted (1 ms)
+      ✓ Value 'Hi' (string) and requirement requireOneOf=[ 'Hi', 'Bye' ] is accepted (1 ms)
+      ✓ Value '1' (int) and requirement requireOneOf=[ 1, 2 ] is accepted
+      ✓ Value 'true' (bool) and requirement requireOneOf=[ true, false ] is accepted (1 ms)
+      ✓ Value 'false' (bool) and requirement requireOneOf=[ false, true ] is accepted
+      ✓ Value 'Hi' (string) and requirement requireMatch=Hi is accepted (1 ms)
+      ✓ Value 'Hi' (string) and requirement requireMatch=[Hi]* is accepted (1 ms)
+      ✓ Value 'Hi' (string) and requirement requireMatch=^[Hi]*$ is accepted
+    cookie parameters
+      ✓ are passed from questions (1 ms)
+      ✓ are passed from maps
+    statements
+      ✓ prints statement (76 ms)
+      ✓ properly skips condition skip statements (72 ms)
+
+-----------------|---------|----------|---------|---------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------
+File             | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s                                                                                                                                                   
+-----------------|---------|----------|---------|---------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------
+All files        |   68.61 |    59.83 |   76.31 |   69.76 |                                                                                                                                                                     
+ lib             |   65.13 |    59.83 |   76.31 |   66.42 |                                                                                                                                                                     
+  questioner.mjs |   65.13 |    59.83 |   76.31 |   66.42 | 101,107-111,119,131-132,135,149,154-158,193-194,204,207-222,234-235,260,277,296-358,370,380,383,395,403,413-415,436,459,468-474,483,486,489,493,496,499,504,510,514 
+ lib/test        |     100 |      100 |     100 |     100 |                                                                                                                                                                     
+  test-data.js   |     100 |      100 |     100 |     100 |                                                                                                                                                                     
+-----------------|---------|----------|---------|---------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Test Suites: 1 passed, 1 total
+Tests:       57 passed, 57 total
+Snapshots:   0 total
+Time:        0.846 s, estimated 2 s
+Ran all test suites.
