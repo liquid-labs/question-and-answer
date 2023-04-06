@@ -58,20 +58,19 @@ INSTALL_BASE:=$(shell npm explore @liquid-labs/catalyst-scripts-node-project -- 
 
 $(CATALYST_JS_LIB): package.json $(CATALYST_JS_LIB_FILES_SRC)
 	JS_BUILD_TARGET=$(CATALYST_JS_LIB_SRC_PATH)/index.js \
-	  JS_OUT=$(CATALYST_JS_LIB) \
+	  JS_OUT=$@ \
 		$(CATALYST_JS_ROLLUP) --config $(INSTALL_BASE)/dist/rollup/rollup.config.mjs
 
 ifdef CATALYST_JS_CLI_SRC_PATH
 BUILD_TARGETS+=$(CATALYST_JS_CLI)
 
+# see DEVELOPER_NOTES.md 'CLI build'
 $(CATALYST_JS_CLI): package.json $(CATALYST_JS_ALL_FILES_SRC)
 	JS_BUILD_TARGET=$(CATALYST_JS_CLI_SRC_PATH)/index.js \
-	  JS_OUT=$(CATALYST_JS_CLI).tmp \
+	  JS_OUT=$@ \
+	  JS_OUT_PREAMBLE='#!/usr/bin/env node' \
 		$(CATALYST_JS_ROLLUP) --config $(INSTALL_BASE)/dist/rollup/rollup.config.mjs
-	echo '#!/usr/bin/env node' > $@
-	cat $@.tmp >> $@
 	chmod a+x $@
-	rm $@.tmp
 endif
 
 
