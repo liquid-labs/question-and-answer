@@ -1,0 +1,9 @@
+{
+  "actions": [
+    { 
+      "prompt": "Which is best?",
+      "options": [ "love", "honor", "justice" ],
+      "parameter": "VAR"
+    }
+  ]
+}

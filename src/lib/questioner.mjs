@@ -31,6 +31,7 @@
  */
 import * as readline from 'node:readline'
 
+import columns from 'cli-columns'
 import createError from 'http-errors'
 
 import { Evaluator } from '@liquid-labs/condition-eval'
@@ -103,49 +104,80 @@ const Questioner = class {
 
       let prompt = q.prompt
       let hint = ''
-      if (defaultValue !== undefined) {
-        if (q.paramType?.match(/bool(?:ean)?/i)) {
-          hint = '[' + (defaultValue === true ? 'Y/n|-' : 'y/N|-') + '] '
+      if (q.options === undefined) {
+        if (defaultValue !== undefined) {
+          if (q.paramType?.match(/bool(?:ean)?/i)) {
+            hint = '[' + (defaultValue === true ? 'Y/n|-' : 'y/N|-') + '] '
+          }
+          else {
+            hint = `[${defaultValue}|-] `
+          }
         }
-        else {
-          hint = `[${defaultValue}|-] `
+        else if (prompt.match(/\[[^]+\] *$/)) { // do we already have a hint?
+          hint = prompt.replace(/.+(\[[^]+\]) *$/, '$1') + ' '
+          prompt = prompt.replace(/(.+?)\s*\[[^]+\] *$/, '$1') // we're gonig to add the hint back in a bit
         }
-      }
-      else if (prompt.match(/\[[^]+\] *$/)) { // do we already have a hint?
-        hint = prompt.replace(/.+(\[[^]+\]) *$/, '$1') + ' '
-        prompt = prompt.replace(/(.+?)\s*\[[^]+\] *$/, '$1') // we're gonig to add the hint back in a bit
-      }
-      else if (q.paramType?.match(/bool(?:ean)?/i)) {
-        hint = '[y/n] '
-      }
+        else if (q.paramType?.match(/bool(?:ean)?/i)) {
+          hint = '[y/n] '
+        }
 
-      // the '\n' puts the input cursor below the prompt for consistency
-      prompt = this.#wrap(prompt) + '\n' + hint
+        // the '\n' puts the input cursor below the prompt for consistency
+        prompt = this.#wrap(prompt) + '\n' + hint
+      }
+      else {
+        prompt = this.#wrap(prompt) + '\n\n'
+        const cliOptions = q.options.map((o, i) => (i + 1) + ') ' + o)
+        prompt += columns(cliOptions, { width : this.width }) + '\n'
+        if (defaultValue !== undefined) {
+          const defaultI = q.options.indexOf(defaultValue)
+          if (defaultI === -1) {
+            delete q.default
+          }
+          else {
+            prompt += '[' + (defaultI + 1) + '] '
+          }
+        }
+      }
 
       rl.setPrompt(formatTerminalText(prompt))
       rl.prompt()
 
       const it = rl[Symbol.asyncIterator]()
-      let answer = (await it.next()).value.trim() || defaultValue || ''
-      if (answer === '-') {
-        answer = undefined
-        delete q.default
+      let verifyResult, value
+      if (q.options === undefined) {
+        let answer = (await it.next()).value.trim() || defaultValue || ''
+        if (answer === '-') {
+          answer = undefined
+          delete q.default
+        }
+        else if (answer === '') {
+          answer = defaultValue
+        }
+        else {
+          q.default = answer
+        }
+
+        // first verify form as a string
+        verifyResult = verifyAnswerForm({ type, value : answer })
+        if (verifyResult === true) {
+          q.rawAnswer = answer
+          value = transformStringValue({ paramType : type, value : answer })
+          verifyResult = verifyRequirements({ op : q, value })
+        }
       }
-      else if (answer === '') {
-        answer = defaultValue
-      }
-      else {
-        q.default = answer
+      else { // it's an option question
+        const selectionS = (await it.next()).value
+        const selectionI = parseInt(selectionS)
+        console.log('selectionS:', selectionS, 'selectionI:', selectionI) // DEBUG
+        if (isNaN(selectionI) || selectionI < 1 || selectionI > q.options.length) {
+          verifyResult = `Please enter a number 1-${q.options.length}.`
+        }
+        else {
+          verifyResult = true
+          value = q.options[selectionI - 1]
+        }
       }
 
-      // first verify form as a string
-      let verifyResult = verifyAnswerForm({ type, value : answer })
-      let value
-      if (verifyResult === true) {
-        q.rawAnswer = answer
-        value = transformStringValue({ paramType : type, value : answer })
-        verifyResult = verifyRequirements({ op : q, value })
-      }
       if (verifyResult === true) {
         q.disposition = ANSWERED
         this.#addResult({ source : q, value })

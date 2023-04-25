@@ -26,7 +26,8 @@
   "dependencies": {
     "@liquid-labs/condition-eval": "^1.0.0-alpha.17",
     "@liquid-labs/terminal-text": "^1.0.0-alpha.1",
-    "@liquid-labs/wrap-text": "^1.0.0-alpha.1"
+    "@liquid-labs/wrap-text": "^1.0.0-alpha.1",
+    "cli-columns": "^4.0.0"
   },
   "devDependencies": {
     "@liquid-labs/catalyst-scripts-node-project": "^1.0.0-alpha.4",
