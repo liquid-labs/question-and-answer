@@ -168,7 +168,6 @@ const Questioner = class {
       else { // it's an option question
         const selectionS = (await it.next()).value
         const selectionI = parseInt(selectionS)
-        console.log('selectionS:', selectionS, 'selectionI:', selectionI) // DEBUG
         if (isNaN(selectionI) || selectionI < 1 || selectionI > q.options.length) {
           verifyResult = `Please enter a number 1-${q.options.length}.`
         }
