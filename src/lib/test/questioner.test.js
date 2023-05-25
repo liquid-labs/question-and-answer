@@ -319,7 +319,7 @@ describe('Questioner', () => {
       ['Hi}Bye', '}', ['Hi', 'Bye']],
       ['Hi|&(Bye', '|&(', ['Hi', 'Bye']],
       ['Hi Bye', ' ', ['Hi', 'Bye']],
-      [' Hi Bye ', ' ', ['Hi', 'Bye']]
+      [' Hi   Bye ', ' ', ['Hi', 'Bye']]
     ])("Answer '%s' sep '%s' -> %p", (answer, sep, expected, done) => {
       const ib = structuredClone(simpleIB)
       delete ib.actions[0].paramType
@@ -338,7 +338,36 @@ describe('Questioner', () => {
     })
   })
 
-  describe('answer requirements', () => {
+  describe('multi-value input (option locked)', () => {
+    test.each([
+      ['1', undefined, [ 'Hi' ]],
+      ['1,2', undefined, ['Hi', 'Bye']],
+      [' 1, 2 ', undefined, ['Hi', 'Bye']],
+      ['1|2', '|', ['Hi', 'Bye']],
+      ['1~2', '~', ['Hi', 'Bye']],
+      ['1|&(2', '|&(', ['Hi', 'Bye']],
+      ['1 2', ' ', ['Hi', 'Bye']],
+      [' 1   2 ', ' ', ['Hi', 'Bye']]
+    ])("Answer '%s' sep '%s' -> %p", (answer, sep, expected, done) => {
+      const ib = structuredClone(simpleIB)
+      delete ib.actions[0].paramType
+      ib.actions[0].multiValue = true
+      ib.actions[0].separator = sep
+      ib.actions[0].options = ['Hi', 'Bye']
+
+      const questioner = new Questioner({ interrogationBundle : ib })
+
+      questioner.question().then(() => {
+        try {
+          expect(questioner.values.IS_CLIENT).toEqual(expected)
+        }
+        finally { done() }
+      })
+      input.send(answer + '\n')
+    })
+  })
+
+  describe('answer requirements (single value)', () => {
     test.each([
       // requireDefined
       ['Hi', 'string', 'requireSomething', true],
