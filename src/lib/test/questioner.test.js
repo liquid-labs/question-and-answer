@@ -303,6 +303,41 @@ describe('Questioner', () => {
     })
   })
 
+  describe('multi-value input (free form)', () => {
+    test.each([
+      ['Hi', undefined, [ 'Hi' ]],
+      ['Hi,Bye', undefined, ['Hi', 'Bye']],
+      [' Hi, Bye ', undefined, ['Hi', 'Bye']],
+      ['Hi,Bye', '|', ['Hi,Bye']],
+      ['Hi|Bye', '|', ['Hi', 'Bye']],
+      ['Hi~Bye', '~', ['Hi', 'Bye']],
+      ['Hi.Bye', '.', ['Hi', 'Bye']],
+      ['Hi&Bye', '&', ['Hi', 'Bye']],
+      ['Hi(Bye', '(', ['Hi', 'Bye']],
+      ['Hi)Bye', ')', ['Hi', 'Bye']],
+      ['Hi{Bye', '{', ['Hi', 'Bye']],
+      ['Hi}Bye', '}', ['Hi', 'Bye']],
+      ['Hi|&(Bye', '|&(', ['Hi', 'Bye']],
+      ['Hi Bye', ' ', ['Hi', 'Bye']],
+      [' Hi Bye ', ' ', ['Hi', 'Bye']]
+    ])("Answer '%s' sep '%s' -> %p", (answer, sep, expected, done) => {
+      const ib = structuredClone(simpleIB)
+      delete ib.actions[0].paramType
+      ib.actions[0].multiValue = true
+      ib.actions[0].separator = sep
+
+      const questioner = new Questioner({ interrogationBundle : ib })
+
+      questioner.question().then(() => {
+        try {
+          expect(questioner.values.IS_CLIENT).toEqual(expected)
+        }
+        finally { done() }
+      })
+      input.send(answer + '\n')
+    })
+  })
+
   describe('answer requirements', () => {
     test.each([
       // requireDefined

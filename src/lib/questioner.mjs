@@ -139,46 +139,60 @@ const Questioner = class {
         }
       }
 
+      if (q.multiValue === true) {
+        const sepDesc = q.separator === undefined ? 'comma' : `"${q.separator}'`
+        prompt += this.#wrap(`\nEnter one or more ${sepDesc} separated ${q.options ? 'selections' : 'values'}.\n`)
+      }
+
       rl.setPrompt(formatTerminalText(prompt))
       rl.prompt()
 
       const it = rl[Symbol.asyncIterator]()
-      let verifyResult, value
-      if (q.options === undefined) {
-        let answer = (await it.next()).value.trim() || defaultValue || ''
-        if (answer === '-') {
-          answer = undefined
-          delete q.default
-        }
-        else if (answer === '') {
-          answer = defaultValue
-        }
-        else {
-          q.default = answer
-        }
 
-        // first verify form as a string
-        verifyResult = verifyAnswerForm({ type, value : answer })
-        if (verifyResult === true) {
-          q.rawAnswer = answer
-          value = transformStringValue({ paramType : type, value : answer })
-          verifyResult = verifyRequirements({ op : q, value })
-        }
+      let answer = (await it.next()).value.trim() || defaultValue || ''
+      if (answer === '-') {
+        answer = undefined
+        delete q.default
       }
-      else { // it's an option question
-        const selectionS = (await it.next()).value
-        const selectionI = parseInt(selectionS)
-        if (isNaN(selectionI) || selectionI < 1 || selectionI > q.options.length) {
-          verifyResult = `Please enter a number 1-${q.options.length}.`
+      else if (answer === '') {
+        answer = defaultValue
+      }
+      else {
+        q.default = answer
+      }
+      q.rawAnswer = answer
+
+      const separator = q.separator?.replaceAll(/(\.|\||\&|\(|\)|\{|\})/g, '\\$1') || ','
+      const splitAnswers = q.multiValue === true ? answer.split(new RegExp(`\\s*${separator}\\s*`)) : [ answer ]
+
+      let verifyResult
+      const values = []
+      for (const aValue of splitAnswers) {
+        if (q.options === undefined) {
+          // first verify form as a string
+          verifyResult = verifyAnswerForm({ type, value : aValue })
+          if (verifyResult === true) {
+            const value = transformStringValue({ paramType : type, value : aValue })
+            verifyResult = verifyRequirements({ op : q, value })
+            values.push(value)
+          }
         }
-        else {
-          verifyResult = true
-          value = q.options[selectionI - 1]
+        else { // it's an option question
+          const selectionI = parseInt(aValue)
+          if (isNaN(selectionI) || selectionI < 1 || selectionI > q.options.length) {
+            verifyResult = `Please enter a number between 1 and ${q.options.length}.`
+          }
+          else {
+            verifyResult = true
+            const value = q.options[selectionI - 1]
+            values.push(value)
+          }
         }
       }
 
       if (verifyResult === true) {
         q.disposition = ANSWERED
+        const value = q.multiValue === true ? values : values[0]
         this.#addResult({ source : q, value })
       }
       else { // the 'answer form' is invalid; let's try again
