@@ -406,7 +406,7 @@ describe('Questioner', () => {
       })
       input.send(value + '\n')
     })
-    // TOOD: I can't get this to work; manual testing looks fine so I have to move on.
+    
     test.each([
       // requireSomething
       ['', 'string', 'requireSomething', true],
