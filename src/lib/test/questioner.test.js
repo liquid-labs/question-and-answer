@@ -406,51 +406,45 @@ describe('Questioner', () => {
       })
       input.send(value + '\n')
     })
-    /* TOOD: I can't get this to work; manual testing looks fine so I have to move on.
+    // TOOD: I can't get this to work; manual testing looks fine so I have to move on.
     test.each([
-      // requireDefined
-      // ['', 'string', 'requireSomething', true]//,
-      // ['', 'int', 'requireSomething', true],
-      // ['', 'bool', 'requireSomething', true]
+      // requireSomething
+      ['', 'string', 'requireSomething', true],
       // requireTruthy
       ['', 'string', 'requireTruthy', true],
       ['0', 'int', 'requireTruthy', true],
-      ['false', 'bool', 'requireTruthy', true],
+      ['false', 'bool', 'requireExact', true],
       // requireExact
-      ['Hi', 'string', 'requireExact', 'Hi'],
-      ['1', 'int', 'requireExact', 1],
-      ['true', 'bool', 'requireExact', true],
-      ['false', 'bool', 'requireExact', false]
+      ['Hi', 'string', 'requireExact', 'Bye'],
+      ['1', 'int', 'requireExact', 2],
+      ['true', 'bool', 'requireExact', false],
+      ['false', 'bool', 'requireExact', true],
       // requireOneOf
-      /* ['Hi', 'string', 'requireOneOf', ['Hi','Bye']],
-      ['1', 'int', 'requireOneOf', [1,2]],
-      ['true', 'bool', 'requireOneOf', [true,false]],
-      ['false', 'bool', 'requireOneOf', [false,true]] */
+      ['Hello', 'string', 'requireOneOf', 'Hi, Bye'],
+      ['10', 'int', 'requireOneOf', '1,2'],
+      ['false', 'bool', 'requireOneOf', 'true'],
     // requireMatch
-    /* ['Hi', 'string', 'requireMatch', 'Hi'],
-      ['Hi', 'string', 'requireMatch', '[Hi]*'],
-      ['Hi', 'string', 'requireMatch', '^[Hi]*$'] * /
-    ])("Value '%s' (%s) and requirement %s=%s is rejected", (value, type, requirement, reqValue, done) => {
+      ['Hi', 'string', 'requireMatch', 'Bye'],
+      ['Hi', 'string', 'requireMatch', '^[Bye]*$']
+    ])("Value '%s' (%s) and requirement %s=%s is rejected", (answer, type, requirement, reqValue, done) => {
       const testScriptPath = fsPath.join(__dirname, 'verify-failure-question.js')
 
       // You cannot (as of Node 19.3.0) listen for events on your own stdout, so we have to create a child process.
       const child = spawn('node', [testScriptPath, type, requirement, reqValue])
-
       child.stdout.resume()
       child.stdout.once('data', (devNull) => { // this is just the original question; we don't care about it here
-        console.log(devNull.toString())
         child.stdout.once('data', (output) => {
           try {
-            console.log(output.toString())
             expect(output.toString().trim()).toMatch(/must/)
-
-            child.kill('SIGINT')
           }
-          finally { done() }
+          finally { 
+            child.kill('SIGINT')
+            done()
+          }
         })
+        child.stdin.write(answer + '\n')
       })
-      child.stdin.write(value + '\n')
-    }) */
+    })
   })
 
   describe('cookie parameters', () => {
