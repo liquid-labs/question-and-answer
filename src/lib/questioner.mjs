@@ -263,7 +263,6 @@ const Questioner = class {
             return acc
           }, {})
           this.#results = this.#results.filter((r) => !(r.parameter in toNix))
-          console.log('filtered results:', this.#results, '\ntoNix:', toNix) // DEBUG
           await this.#processActions()
           break
         }
@@ -448,7 +447,6 @@ const Questioner = class {
           throw createError.BadRequest(`Question ${i + 1} does not define a 'prompt'.`)
         }
         if (action.paramType !== undefined && !action.paramType.match(/bool(?:ean)?|int(?:eger)?|float|numeric|string/)) {
-          console.log('what')
           throw createError.BadRequest(`Found unknown parameter type '${action.paramType}' in interrogation bundle question ${i + 1}.`)
         }
       }
