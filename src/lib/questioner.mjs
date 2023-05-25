@@ -179,7 +179,7 @@ const Questioner = class {
         }
         else { // it's an option question
           const selectionI = parseInt(aValue)
-          if (isNaN(selectionI) || selectionI < 1 || selectionI > q.options.length) {
+          if (!aValue.match(/^\d+$/) || isNaN(selectionI) || selectionI < 1 || selectionI > q.options.length) {
             verifyResult = `Please enter a number between 1 and ${q.options.length}.`
           }
           else {
