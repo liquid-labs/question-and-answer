@@ -303,7 +303,71 @@ describe('Questioner', () => {
     })
   })
 
-  describe('answer requirements', () => {
+  describe('multi-value input (free form)', () => {
+    test.each([
+      ['Hi', undefined, ['Hi']],
+      ['Hi,Bye', undefined, ['Hi', 'Bye']],
+      [' Hi, Bye ', undefined, ['Hi', 'Bye']],
+      ['Hi,Bye', '|', ['Hi,Bye']],
+      ['Hi|Bye', '|', ['Hi', 'Bye']],
+      ['Hi~Bye', '~', ['Hi', 'Bye']],
+      ['Hi.Bye', '.', ['Hi', 'Bye']],
+      ['Hi&Bye', '&', ['Hi', 'Bye']],
+      ['Hi(Bye', '(', ['Hi', 'Bye']],
+      ['Hi)Bye', ')', ['Hi', 'Bye']],
+      ['Hi{Bye', '{', ['Hi', 'Bye']],
+      ['Hi}Bye', '}', ['Hi', 'Bye']],
+      ['Hi|&(Bye', '|&(', ['Hi', 'Bye']],
+      ['Hi Bye', ' ', ['Hi', 'Bye']],
+      [' Hi   Bye ', ' ', ['Hi', 'Bye']]
+    ])("Answer '%s' sep '%s' -> %p", (answer, sep, expected, done) => {
+      const ib = structuredClone(simpleIB)
+      delete ib.actions[0].paramType
+      ib.actions[0].multiValue = true
+      ib.actions[0].separator = sep
+
+      const questioner = new Questioner({ interrogationBundle : ib })
+
+      questioner.question().then(() => {
+        try {
+          expect(questioner.values.IS_CLIENT).toEqual(expected)
+        }
+        finally { done() }
+      })
+      input.send(answer + '\n')
+    })
+  })
+
+  describe('multi-value input (option locked)', () => {
+    test.each([
+      ['1', undefined, ['Hi']],
+      ['1,2', undefined, ['Hi', 'Bye']],
+      [' 1, 2 ', undefined, ['Hi', 'Bye']],
+      ['1|2', '|', ['Hi', 'Bye']],
+      ['1~2', '~', ['Hi', 'Bye']],
+      ['1|&(2', '|&(', ['Hi', 'Bye']],
+      ['1 2', ' ', ['Hi', 'Bye']],
+      [' 1   2 ', ' ', ['Hi', 'Bye']]
+    ])("Answer '%s' sep '%s' -> %p", (answer, sep, expected, done) => {
+      const ib = structuredClone(simpleIB)
+      delete ib.actions[0].paramType
+      ib.actions[0].multiValue = true
+      ib.actions[0].separator = sep
+      ib.actions[0].options = ['Hi', 'Bye']
+
+      const questioner = new Questioner({ interrogationBundle : ib })
+
+      questioner.question().then(() => {
+        try {
+          expect(questioner.values.IS_CLIENT).toEqual(expected)
+        }
+        finally { done() }
+      })
+      input.send(answer + '\n')
+    })
+  })
+
+  describe('answer requirements (single value)', () => {
     test.each([
       // requireDefined
       ['Hi', 'string', 'requireSomething', true],
@@ -342,51 +406,98 @@ describe('Questioner', () => {
       })
       input.send(value + '\n')
     })
-    /* TOOD: I can't get this to work; manual testing looks fine so I have to move on.
+
     test.each([
-      // requireDefined
-      // ['', 'string', 'requireSomething', true]//,
-      // ['', 'int', 'requireSomething', true],
-      // ['', 'bool', 'requireSomething', true]
+      // requireSomething
+      ['', 'string', 'requireSomething', true],
       // requireTruthy
       ['', 'string', 'requireTruthy', true],
       ['0', 'int', 'requireTruthy', true],
-      ['false', 'bool', 'requireTruthy', true],
+      ['false', 'bool', 'requireExact', true],
       // requireExact
-      ['Hi', 'string', 'requireExact', 'Hi'],
-      ['1', 'int', 'requireExact', 1],
-      ['true', 'bool', 'requireExact', true],
-      ['false', 'bool', 'requireExact', false]
+      ['Hi', 'string', 'requireExact', 'Bye'],
+      ['1', 'int', 'requireExact', 2],
+      ['true', 'bool', 'requireExact', false],
+      ['false', 'bool', 'requireExact', true],
       // requireOneOf
-      /* ['Hi', 'string', 'requireOneOf', ['Hi','Bye']],
-      ['1', 'int', 'requireOneOf', [1,2]],
-      ['true', 'bool', 'requireOneOf', [true,false]],
-      ['false', 'bool', 'requireOneOf', [false,true]] */
-    // requireMatch
-    /* ['Hi', 'string', 'requireMatch', 'Hi'],
-      ['Hi', 'string', 'requireMatch', '[Hi]*'],
-      ['Hi', 'string', 'requireMatch', '^[Hi]*$'] * /
-    ])("Value '%s' (%s) and requirement %s=%s is rejected", (value, type, requirement, reqValue, done) => {
+      ['Hello', 'string', 'requireOneOf', 'Hi, Bye'],
+      ['10', 'int', 'requireOneOf', '1,2'],
+      ['false', 'bool', 'requireOneOf', 'true'],
+      // requireMatch
+      ['Hi', 'string', 'requireMatch', 'Bye'],
+      ['Hi', 'string', 'requireMatch', '^[Bye]*$']
+    ])("Value '%s' (%s) and requirement %s=%s is rejected", (answer, type, requirement, reqValue, done) => {
       const testScriptPath = fsPath.join(__dirname, 'verify-failure-question.js')
 
       // You cannot (as of Node 19.3.0) listen for events on your own stdout, so we have to create a child process.
       const child = spawn('node', [testScriptPath, type, requirement, reqValue])
-
       child.stdout.resume()
       child.stdout.once('data', (devNull) => { // this is just the original question; we don't care about it here
-        console.log(devNull.toString())
         child.stdout.once('data', (output) => {
           try {
-            console.log(output.toString())
             expect(output.toString().trim()).toMatch(/must/)
-
-            child.kill('SIGINT')
           }
-          finally { done() }
+          finally {
+            child.kill('SIGINT')
+            done()
+          }
         })
+        child.stdin.write(answer + '\n')
       })
-      child.stdin.write(value + '\n')
-    }) */
+    })
+  })
+
+  describe('answer requirements (multi value)', () => {
+    test.each([
+      // requireMinCount
+      ['Hi,Bye', 'requireMinCount', 1],
+      ['Hi,Bye', 'requireMinCount', 2],
+      // requireMaxCount
+      ['Hi,Bye', 'requireMaxCount', 3],
+      ['Hi,Bye', 'requireMaxCount', 2]
+    ])("Value '%s' (%s) and requirement %s=%s is accepted", (value, requirement, reqValue, done) => {
+      const ib = structuredClone(simpleIB)
+      ib.actions[0].paramType = 'string'
+      ib.actions[0].multiValue = true
+      ib.actions[0][requirement] = reqValue
+
+      const questioner = new Questioner({ interrogationBundle : ib })
+
+      questioner.question().then(() => {
+        try {
+          expect(questioner.values.IS_CLIENT + '').toBe(value)
+        }
+        finally { done() }
+      })
+      input.send(value + '\n')
+    })
+
+    test.each([
+      // requireMinCount
+      ['Hi', 'requireMinCount', 2],
+      ['Hi,Bye', 'requireMinCount', 3],
+      // requireMaxCount
+      ['Hi,Bye', 'requireMaxCount', 1],
+      ['Hi,Bye,Blah', 'requireMaxCount', 2]
+    ])("Value '%s' (%s) and requirement %s=%s is rejected", (answer, requirement, reqValue, done) => {
+      const testScriptPath = fsPath.join(__dirname, 'verify-failure-multi-question.js')
+
+      // You cannot (as of Node 19.3.0) listen for events on your own stdout, so we have to create a child process.
+      const child = spawn('node', [testScriptPath, requirement, reqValue])
+      child.stdout.resume()
+      child.stdout.once('data', (devNull) => { // this is just the original question; we don't care about it here
+        child.stdout.once('data', (output) => {
+          try {
+            expect(output.toString().trim()).toMatch(/must/)
+          }
+          finally {
+            child.kill('SIGINT')
+            done()
+          }
+        })
+        child.stdin.write(answer + '\n')
+      })
+    })
   })
 
   describe('cookie parameters', () => {

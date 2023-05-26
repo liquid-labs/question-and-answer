@@ -139,46 +139,68 @@ const Questioner = class {
         }
       }
 
+      if (q.multiValue === true) {
+        const sepDesc = q.separator === undefined ? 'comma' : `"${q.separator}'`
+        prompt += this.#wrap(`\nEnter one or more ${sepDesc} separated ${q.options ? 'selections' : 'values'}.\n`)
+      }
+
       rl.setPrompt(formatTerminalText(prompt))
       rl.prompt()
 
       const it = rl[Symbol.asyncIterator]()
-      let verifyResult, value
-      if (q.options === undefined) {
-        let answer = (await it.next()).value.trim() || defaultValue || ''
-        if (answer === '-') {
-          answer = undefined
-          delete q.default
-        }
-        else if (answer === '') {
-          answer = defaultValue
-        }
-        else {
-          q.default = answer
-        }
 
-        // first verify form as a string
-        verifyResult = verifyAnswerForm({ type, value : answer })
-        if (verifyResult === true) {
-          q.rawAnswer = answer
-          value = transformStringValue({ paramType : type, value : answer })
-          verifyResult = verifyRequirements({ op : q, value })
-        }
+      let answer = (await it.next()).value.trim() || defaultValue || ''
+      if (answer === '-') {
+        answer = undefined
+        delete q.default
       }
-      else { // it's an option question
-        const selectionS = (await it.next()).value
-        const selectionI = parseInt(selectionS)
-        if (isNaN(selectionI) || selectionI < 1 || selectionI > q.options.length) {
-          verifyResult = `Please enter a number 1-${q.options.length}.`
-        }
-        else {
-          verifyResult = true
-          value = q.options[selectionI - 1]
+      else if (answer === '') {
+        answer = defaultValue
+      }
+      else {
+        q.default = answer
+      }
+      q.rawAnswer = answer
+
+      // escape special characters
+      const separator = q.separator?.replaceAll(/(\.|\+|\*|\?|\^|\$|\||\(|\)|\{|\}|\[|\]|\\)/g, '\\$1') || ','
+      const splitAnswers = q.multiValue === true ? answer.split(new RegExp(`\\s*${separator}\\s*`)) : [answer]
+
+      let verifyResult = true
+      if (q.multiValue === true) {
+        verifyResult = verifyMultiValueRequirements({ op : q, splitAnswers })
+      }
+      const values = []
+      if (verifyResult === true) {
+        for (const aValue of splitAnswers) {
+          if (q.options === undefined) {
+            // first verify form as a string
+            verifyResult = verifyAnswerForm({ type, value : aValue })
+            if (verifyResult === true) {
+              const value = transformStringValue({ paramType : type, value : aValue })
+              verifyResult = verifySingleValueRequirements({ op : q, value })
+              values.push(value)
+            }
+          }
+          else { // it's an option question
+            const selectionI = parseInt(aValue)
+            if (!aValue.match(/^\d+$/) || isNaN(selectionI) || selectionI < 1 || selectionI > q.options.length) {
+              verifyResult = `Please enter a number between 1 and ${q.options.length}.`
+            }
+            else {
+              verifyResult = true
+              const value = q.options[selectionI - 1]
+              values.push(value)
+            }
+          }
+
+          if (verifyResult !== true) break
         }
       }
 
       if (verifyResult === true) {
         q.disposition = ANSWERED
+        const value = q.multiValue === true ? values : values[0]
         this.#addResult({ source : q, value })
       }
       else { // the 'answer form' is invalid; let's try again
@@ -249,7 +271,6 @@ const Questioner = class {
             return acc
           }, {})
           this.#results = this.#results.filter((r) => !(r.parameter in toNix))
-          console.log('filtered results:', this.#results, '\ntoNix:', toNix) // DEBUG
           await this.#processActions()
           break
         }
@@ -434,7 +455,6 @@ const Questioner = class {
           throw createError.BadRequest(`Question ${i + 1} does not define a 'prompt'.`)
         }
         if (action.paramType !== undefined && !action.paramType.match(/bool(?:ean)?|int(?:eger)?|float|numeric|string/)) {
-          console.log('what')
           throw createError.BadRequest(`Found unknown parameter type '${action.paramType}' in interrogation bundle question ${i + 1}.`)
         }
       }
@@ -494,7 +514,7 @@ const verifyAnswerForm = ({ type, value }) => {
 }
 
 const verifyMappingValue = ({ map, value }) => {
-  if (verifyRequirements({ op : map, value }) !== true) {
+  if (verifySingleValueRequirements({ op : map, value }) !== true) {
     let msg
     if (map.description) {
       msg = `${map.description} ${value} (mapping error)`
@@ -506,7 +526,26 @@ const verifyMappingValue = ({ map, value }) => {
   }
 }
 
-const verifyRequirements = ({ op, value }) => {
+const verifyMultiValueRequirements = ({ op, splitAnswers }) => {
+  const { requireMaxCount, requireMinCount } = op
+
+  if (requireMaxCount !== undefined) {
+    const maxCount = typeof requireMaxCount === 'string' ? parseInt(requireMaxCount) : requireMaxCount
+    if (splitAnswers.length > maxCount) {
+      return `You must provide no more than ${maxCount} values.`
+    }
+  }
+  if (requireMinCount !== undefined) {
+    const minCount = typeof requireMinCount === 'string' ? parseInt(requireMinCount) : requireMinCount
+    if (splitAnswers.length < minCount) {
+      return `You must provide at least ${minCount} values.`
+    }
+  }
+
+  return true
+}
+
+const verifySingleValueRequirements = ({ op, value }) => {
   const { parameter, requireSomething, requireTruthy, requireExact, requireMatch } = op
   let { requireOneOf } = op
 
