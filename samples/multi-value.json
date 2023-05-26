@@ -3,8 +3,8 @@
     { 
       "prompt": "What are your 2 or 3 favorite colors?",
       "multiValue": true,
-      "requiredMin": 2,
-      "requiredMax": 3,
+      "requireMinCount": 2,
+      "requireMaxCount": 3,
       "parameter": "VAR"
     }
   ]

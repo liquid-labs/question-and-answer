@@ -305,7 +305,7 @@ describe('Questioner', () => {
 
   describe('multi-value input (free form)', () => {
     test.each([
-      ['Hi', undefined, [ 'Hi' ]],
+      ['Hi', undefined, ['Hi']],
       ['Hi,Bye', undefined, ['Hi', 'Bye']],
       [' Hi, Bye ', undefined, ['Hi', 'Bye']],
       ['Hi,Bye', '|', ['Hi,Bye']],
@@ -340,7 +340,7 @@ describe('Questioner', () => {
 
   describe('multi-value input (option locked)', () => {
     test.each([
-      ['1', undefined, [ 'Hi' ]],
+      ['1', undefined, ['Hi']],
       ['1,2', undefined, ['Hi', 'Bye']],
       [' 1, 2 ', undefined, ['Hi', 'Bye']],
       ['1|2', '|', ['Hi', 'Bye']],
@@ -406,7 +406,7 @@ describe('Questioner', () => {
       })
       input.send(value + '\n')
     })
-    
+
     test.each([
       // requireSomething
       ['', 'string', 'requireSomething', true],
@@ -423,7 +423,7 @@ describe('Questioner', () => {
       ['Hello', 'string', 'requireOneOf', 'Hi, Bye'],
       ['10', 'int', 'requireOneOf', '1,2'],
       ['false', 'bool', 'requireOneOf', 'true'],
-    // requireMatch
+      // requireMatch
       ['Hi', 'string', 'requireMatch', 'Bye'],
       ['Hi', 'string', 'requireMatch', '^[Bye]*$']
     ])("Value '%s' (%s) and requirement %s=%s is rejected", (answer, type, requirement, reqValue, done) => {
@@ -437,7 +437,60 @@ describe('Questioner', () => {
           try {
             expect(output.toString().trim()).toMatch(/must/)
           }
-          finally { 
+          finally {
+            child.kill('SIGINT')
+            done()
+          }
+        })
+        child.stdin.write(answer + '\n')
+      })
+    })
+  })
+
+  describe('answer requirements (multi value)', () => {
+    test.each([
+      // requireMinCount
+      ['Hi,Bye', 'requireMinCount', 1],
+      ['Hi,Bye', 'requireMinCount', 2],
+      // requireMaxCount
+      ['Hi,Bye', 'requireMaxCount', 3],
+      ['Hi,Bye', 'requireMaxCount', 2]
+    ])("Value '%s' (%s) and requirement %s=%s is accepted", (value, requirement, reqValue, done) => {
+      const ib = structuredClone(simpleIB)
+      ib.actions[0].paramType = 'string'
+      ib.actions[0].multiValue = true
+      ib.actions[0][requirement] = reqValue
+
+      const questioner = new Questioner({ interrogationBundle : ib })
+
+      questioner.question().then(() => {
+        try {
+          expect(questioner.values.IS_CLIENT + '').toBe(value)
+        }
+        finally { done() }
+      })
+      input.send(value + '\n')
+    })
+
+    test.each([
+      // requireMinCount
+      ['Hi', 'requireMinCount', 2],
+      ['Hi,Bye', 'requireMinCount', 3],
+      // requireMaxCount
+      ['Hi,Bye', 'requireMaxCount', 1],
+      ['Hi,Bye,Blah', 'requireMaxCount', 2]
+    ])("Value '%s' (%s) and requirement %s=%s is rejected", (answer, requirement, reqValue, done) => {
+      const testScriptPath = fsPath.join(__dirname, 'verify-failure-multi-question.js')
+
+      // You cannot (as of Node 19.3.0) listen for events on your own stdout, so we have to create a child process.
+      const child = spawn('node', [testScriptPath, requirement, reqValue])
+      child.stdout.resume()
+      child.stdout.once('data', (devNull) => { // this is just the original question; we don't care about it here
+        child.stdout.once('data', (output) => {
+          try {
+            expect(output.toString().trim()).toMatch(/must/)
+          }
+          finally {
             child.kill('SIGINT')
             done()
           }
