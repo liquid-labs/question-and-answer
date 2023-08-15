@@ -13,7 +13,11 @@
     "preversion": "make qa",
     "lint": "make lint",
     "lint:fix": "make lint-fix",
+    "prepack": "make",
     "qa": "make qa"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   },
   "keywords": [],
   "author": "Zane Rockenbaugh <zane@liquid-labs.com>",
@@ -30,7 +34,7 @@
     "cli-columns": "^4.0.0"
   },
   "devDependencies": {
-    "@liquid-labs/catalyst-scripts-node-project": "^1.0.0-alpha.4",
+    "@liquid-labs/catalyst-scripts-node-project": "^1.0.0-alpha.21",
     "http-errors": "^2.0.0",
     "mock-stdin": "^1.0.0"
   },
