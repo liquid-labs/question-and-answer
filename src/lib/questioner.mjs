@@ -93,7 +93,7 @@ const Questioner = class {
   async #askQuestion(q) {
     // to avoid the 'MaxListenersExceededWarning', we have to create the rl inside the loop because everytime we do
     // our loop it ends up adding listeners for whatever reason.
-    const rl = readline.createInterface({ input : this.#input, output : this.#output, terminal : false })
+    const rl = readline.createInterface({ input : this.#input, output : this.#output, terminal : false }) // TODO: why is terminal false?
 
     try {
       const type = q.paramType || 'string'
