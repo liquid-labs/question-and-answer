@@ -60,7 +60,7 @@ describe('Questioner', () => {
       child.stdin.write('yes\n')
     })
 
-    test("question is skipped if parameter defined in initial values", (done) => {
+    test('question is skipped if parameter defined in initial values', (done) => {
       const ib = structuredClone(simpleIB)
       const initialParameters = { IS_CLIENT : false }
 
@@ -78,22 +78,22 @@ describe('Questioner', () => {
     test.each([
       ['bool', 'false', false],
       ['int', '100', 100]
-    ])("initially defined string values are transformed according to the parameter type (%s)",
-        (paramType, input, expected, done) => {
-      const ib = structuredClone(simpleIB)
-      ib.actions[0].paramType = paramType
-      const initialParameters = { IS_CLIENT : input }
+    ])('initially defined string values are transformed according to the parameter type (%s)',
+      (paramType, input, expected, done) => {
+        const ib = structuredClone(simpleIB)
+        ib.actions[0].paramType = paramType
+        const initialParameters = { IS_CLIENT : input }
 
-      const questioner = new Questioner({ initialParameters, interrogationBundle : ib })
+        const questioner = new Questioner({ initialParameters, interrogationBundle : ib })
 
-      questioner.question().then(() => {
-        try {
-          expect(questioner.get('IS_CLIENT')).toBe(expected)
-          expect(questioner.getResult('IS_CLIENT').disposition).toBe(DEFINED_SKIPPED)
-        }
-        finally { done() }
+        questioner.question().then(() => {
+          try {
+            expect(questioner.get('IS_CLIENT')).toBe(expected)
+            expect(questioner.getResult('IS_CLIENT').disposition).toBe(DEFINED_SKIPPED)
+          }
+          finally { done() }
+        })
       })
-    })
 
     test("when question is condition-skipped, uses 'elseValue' if present", (done) => {
       const ib = structuredClone(simpleMapIB)

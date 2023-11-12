@@ -244,7 +244,7 @@ const Questioner = class {
 
       if (definedSkip === true) { // is already defined?
         action.disposition = DEFINED_SKIPPED
-        const value = transformStringValue({ paramType : action.paramType, value: this.get(action.parameter) })
+        const value = transformStringValue({ paramType : action.paramType, value : this.get(action.parameter) })
         this.#addResult({ source : action, value })
         continue
       }
