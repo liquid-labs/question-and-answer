@@ -15,7 +15,7 @@ import {
   IS_THIS_THE_END,
   WHATS_YOUR_FAVORITE_INT
 } from './test-data'
-import { Questioner, ANSWERED, CONDITION_SKIPPED } from '../questioner'
+import { Questioner, ANSWERED, CONDITION_SKIPPED, DEFINED_SKIPPED } from '../questioner'
 
 const input = stdin()
 
@@ -25,7 +25,7 @@ describe('Questioner', () => {
   afterAll(() => jest.setTimeout(5000)) // restore default
 
   describe('QnA flow', () => {
-    test('skips questions with a pre-existing parameter value', (done) => {
+    test('skips questions with a pre-existing parameter value (from previous question)', (done) => {
       const testScriptPath = fsPath.join(__dirname, 'double-question.js')
 
       // You cannot (as of Node 19.3.0) listen for events on your own stdout, so we have to create a child process.
@@ -59,6 +59,41 @@ describe('Questioner', () => {
 
       child.stdin.write('yes\n')
     })
+
+    test('question is skipped if parameter defined in initial values', (done) => {
+      const ib = structuredClone(simpleIB)
+      const initialParameters = { IS_CLIENT : false }
+
+      const questioner = new Questioner({ initialParameters, interrogationBundle : ib })
+
+      questioner.question().then(() => {
+        try {
+          expect(questioner.get('IS_CLIENT')).toBe(false)
+          expect(questioner.getResult('IS_CLIENT').disposition).toBe(DEFINED_SKIPPED)
+        }
+        finally { done() }
+      })
+    })
+
+    test.each([
+      ['bool', 'false', false],
+      ['int', '100', 100]
+    ])('initially defined string values are transformed according to the parameter type (%s)',
+      (paramType, input, expected, done) => {
+        const ib = structuredClone(simpleIB)
+        ib.actions[0].paramType = paramType
+        const initialParameters = { IS_CLIENT : input }
+
+        const questioner = new Questioner({ initialParameters, interrogationBundle : ib })
+
+        questioner.question().then(() => {
+          try {
+            expect(questioner.get('IS_CLIENT')).toBe(expected)
+            expect(questioner.getResult('IS_CLIENT').disposition).toBe(DEFINED_SKIPPED)
+          }
+          finally { done() }
+        })
+      })
 
     test("when question is condition-skipped, uses 'elseValue' if present", (done) => {
       const ib = structuredClone(simpleMapIB)
