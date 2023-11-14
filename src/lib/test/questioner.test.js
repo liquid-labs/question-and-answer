@@ -164,7 +164,7 @@ describe('Questioner', () => {
     test.each([
       ['1', 1],
       ['0', 0],
-      ['-1', -1],
+      ['-1', -1]
     ])("simple boolean question answer '%s' -> %s", (answer, expected, done) => {
       const ib = structuredClone(simpleIB)
       ib.actions[0].paramType = 'int'
