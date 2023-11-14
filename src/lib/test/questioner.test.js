@@ -77,8 +77,9 @@ describe('Questioner', () => {
 
     test.each([
       ['bool', 'false', false],
-      ['int', '100', 100]
-    ])('initially defined string values are transformed according to the parameter type (%s)',
+      ['int', '100', 100],
+      ['int', '-1', -1]
+    ])('initially defined string values are transformed according to the parameter type (%s: %s)',
       (paramType, input, expected, done) => {
         const ib = structuredClone(simpleIB)
         ib.actions[0].paramType = paramType
@@ -156,6 +157,29 @@ describe('Questioner', () => {
       ["no 'parameter' for question", noQuestionParameterIB, /does not define a 'parameter'/]
     ])('Will raise an exception on %s.', (desc, ib, exceptionRe) => {
       expect(() => new Questioner({ interrogationBundle : ib })).toThrow(exceptionRe)
+    })
+  })
+
+  describe('boolean questions', () => {
+    test.each([
+      ['1', 1],
+      ['0', 0],
+      ['-1', -1],
+    ])("simple boolean question answer '%s' -> %s", (answer, expected, done) => {
+      const ib = structuredClone(simpleIB)
+      ib.actions[0].paramType = 'int'
+      const questioner = new Questioner({ interrogationBundle : ib })
+
+      questioner.question().then(() => {
+        try {
+          const result = questioner.getResult('IS_CLIENT')
+          expect(result.value).toBe(expected)
+          expect(result.rawAnswer).toBe(answer)
+          expect(result.disposition).toBe(ANSWERED)
+        }
+        finally { done() }
+      })
+      input.send(answer + '\n')
     })
   })
 

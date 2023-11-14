@@ -493,7 +493,7 @@ const transformStringValue = ({ paramType, value }) => {
 
 const verifyAnswerForm = ({ type, value }) => {
   if ((/int(?:eger)?/i).test(type)) {
-    if (isNaN(value) || !value.match(/^\d+$/)) {
+    if (isNaN(value) || !value.match(/^-?\d+$/)) {
       return `'${value}' is not a valid integer.`
     }
   }
