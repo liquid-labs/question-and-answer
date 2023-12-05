@@ -34,7 +34,9 @@
     "cli-columns": "^4.0.0"
   },
   "devDependencies": {
-    "@liquid-labs/catalyst-scripts-node-project": "^1.0.0-alpha.21",
+    "@liquid-labs/sdlc-resource-babel-and-rollup": "^1.0.0-alpha.5",
+    "@liquid-labs/sdlc-resource-eslint": "^1.0.0-alpha.2",
+    "@liquid-labs/sdlc-resource-jest": "^1.0.0-alpha.5",
     "http-errors": "^2.0.0",
     "mock-stdin": "^1.0.0"
   },
