@@ -5,7 +5,7 @@
   "main": "dist/question-and-answer.js",
   "module": "dist/question-and-answer.mjs",
   "bin": {
-    "qna": "dist/question-and-answer-cli.js"
+    "qna": "dist/question-and-answer-exec.js"
   },
   "scripts": {
     "build": "make build",
