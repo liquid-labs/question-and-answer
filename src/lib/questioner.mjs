@@ -1,16 +1,16 @@
 /**
- * Exports `Questioner` object used to interogate the user and generate results based on answers and data mappings. 
- * Refer to the [User's guide](https://github.com/liquid-labs/question-and-answer/README.md#users-guide) for 
+ * Exports `Questioner` object used to interogate the user and generate results based on answers and data mappings.
+ * Refer to the [User's guide](https://github.com/liquid-labs/question-and-answer/README.md#users-guide) for
  * intherrogation bundle structure and expected behavior.
- * 
+ *
  * ## Developer notes
  *
- * We're not strictly enforcing parameter types in-so-far as action defined parameters `value`, `source`, `elseValue` 
+ * We're not strictly enforcing parameter types in-so-far as action defined parameters `value`, `source`, `elseValue`
  * and `elseSource` are essentialy "trusted" to be of the proper type, though we do  but we should check and coerce
  * string results (from the values). Also, why not have `evalString` as an option from condition eval? E.g., `'' ||
  * 'Larry'` is a valid expression. (If we do this, it might make sense to separate out the 'safe expression' testing
  * to be distinct based on the type of item; e.g., '+' and '||' are valid with strings, but '%' is just non-sensical.)
- * 
+ *
  * @module
  */
 import * as readline from 'node:readline'
