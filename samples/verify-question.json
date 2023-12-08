@@ -1,6 +1,6 @@
 {
   "actions": [
     { "prompt": "What is the value?",  "parameter": "VAR"  },
-    { "prompt": "Are you sure?", "parameter": "VAR" }
+    { "prompt": "Are you sure?", "parameter": "VAR", "noSkipDefined": true }
   ]
 }

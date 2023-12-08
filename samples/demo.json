@@ -1,0 +1,29 @@
+{
+  "actions": [
+    { "statement": "Let us know your thoughts!" },
+    { 
+      "prompt": "What are your 2 or 3 favorite colors?",
+      "multiValue": true,
+      "requireMinCount": 2,
+      "requireMaxCount": 3,
+      "parameter": "FAVORITE_COLOR"
+    },
+    {
+      "prompt": "What's your favorite integer number?",
+      "paramType": "integer",
+      "parameter": "FAVORITE_NUMBER"
+    },
+    { 
+      "prompt": "Which is best?",
+      "options": [ "love", "honor", "justice" ],
+      "parameter": "BEST_VIRTUE"
+    },
+    {
+      "maps": [
+        { "source": "FAVORITE_NUMBER > 99", "parameter": "GT100", "paramType": "boolean" },
+        { "source": "FAVORITE_NUMBER * 2", "parameter": "TWOX", "paramType": "integer" }
+      ]
+    },
+    { "review": "all" }
+  ]
+}

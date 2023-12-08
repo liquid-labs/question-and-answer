@@ -1,7 +1,7 @@
 {
   "name": "@liquid-labs/question-and-answer",
   "version": "1.0.0-alpha.14",
-  "description": "",
+  "description": "Library providing command-line question and answer functionality.",
   "main": "dist/question-and-answer.js",
   "module": "dist/question-and-answer.mjs",
   "bin": {
