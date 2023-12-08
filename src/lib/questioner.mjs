@@ -350,10 +350,15 @@ const Questioner = class {
       const result = this.#getResultByIndex(action._index)
       const include = action.statement === undefined
         && (reviewType === 'all' || action.prompt !== undefined)
-        && !result.disposition.endsWith('skipped')
+        && !result?.disposition.endsWith('skipped')
 
       if (include) {
-        included.push(action)
+        if (action.prompt !== undefined) {
+          included.push(action)
+        }
+        else if (action.maps !== undefined) {
+          included.push(...action.maps)
+        }
       }
     }
     if (included.length === 0) {
