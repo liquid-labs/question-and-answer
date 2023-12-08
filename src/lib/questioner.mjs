@@ -1,33 +1,17 @@
 /**
  * Exports `Questioner` object used to interogate the user and generate results based on answers and data mappings.
- *
- * ## When are questions asked?
- *
- * A question may have a `condition` attached to it. When the condition, the question (and any question-local mappngs)
- * are skipped entirely. By default, the question is skipped for the user if the `parameter` already has a value or is
- * "[positively blank](#positively-blank)", though in this case the question-local mappings are executed (so long as
- * the condition passes).
- *
- * ## Positively blank
- *
- * An answer or value of '-' is interpretted to mean 'nullify (or blank) the value. This allows the user to un-set an
- * answer, as when the value is already set and the answer has a default. In that case, just hitting return would
- * result in the value staying as the default. To un-set the value, the user would answer '-'.
- *
- * Note that a blank answer with no default is also blank. You can, but don't have to use the '-'.
- *
- * <details>
- * <summary>Developer notes</summary>
+ * Refer to the [User's guide](https://github.com/liquid-labs/question-and-answer/README.md#users-guide) for
+ * intherrogation bundle structure and expected behavior.
  *
  * ## Developer notes
  *
- * We're not strictly enforcing parameter types in-so-far as user suppelied `values` our `source` results (including
- * `elseValue` and `elseSource`) are essentialy "trusted" to be of the proper type, but we should check and coerce
- * string results (from the valuess). Also, why not have `evalString` as an option from condition eval? E.g., `'' ||
+ * We're not strictly enforcing parameter types in-so-far as action defined parameters `value`, `source`, `elseValue`
+ * and `elseSource` are essentialy "trusted" to be of the proper type, though we do  but we should check and coerce
+ * string results (from the values). Also, why not have `evalString` as an option from condition eval? E.g., `'' ||
  * 'Larry'` is a valid expression. (If we do this, it might make sense to separate out the 'safe expression' testing
  * to be distinct based on the type of item; e.g., '+' and '||' are valid with strings, but '%' is just non-sensical.)
  *
- * </detials>
+ * @module
  */
 import * as readline from 'node:readline'
 
@@ -572,7 +556,7 @@ const verifySingleValueRequirements = ({ op, value }) => {
   }
   else if (requireMatch !== undefined) {
     if (!value.match) {
-      throw createError.BadRequest(`Parameter '${parameter}' 'requireMatch' must be applied a string.`)
+      throw createError.BadRequest(`Parameter '${parameter}' 'requireMatch' must be applied to a string.`)
     }
 
     let regex
