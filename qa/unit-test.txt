@@ -1,0 +1,298 @@
+Test git rev: f99880df87bde8566bd9adba200040897363ba36
+Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] 
+What's your favorite int?
+
+
+What's your favorite int?
+
+
+What's your favorite int?
+
+
+Is the Company the client?
+[y=client/n=contractor] 
+Is the Company the client?
+[y=client/n=contractor] 
+Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] 
+Enter one or more comma separated values.
+Is the Company the client?
+[y=client/n=contractor] 
+Enter one or more comma separated values.
+Is the Company the client?
+[y=client/n=contractor] 
+Enter one or more comma separated values.
+Is the Company the client?
+[y=client/n=contractor] 
+Enter one or more "|' separated values.
+Is the Company the client?
+[y=client/n=contractor] 
+Enter one or more "|' separated values.
+Is the Company the client?
+[y=client/n=contractor] 
+Enter one or more "~' separated values.
+Is the Company the client?
+[y=client/n=contractor] 
+Enter one or more ".' separated values.
+Is the Company the client?
+[y=client/n=contractor] 
+Enter one or more "&' separated values.
+Is the Company the client?
+[y=client/n=contractor] 
+Enter one or more "(' separated values.
+Is the Company the client?
+[y=client/n=contractor] 
+Enter one or more ")' separated values.
+Is the Company the client?
+[y=client/n=contractor] 
+Enter one or more "{' separated values.
+Is the Company the client?
+[y=client/n=contractor] 
+Enter one or more "}' separated values.
+Is the Company the client?
+[y=client/n=contractor] 
+Enter one or more "|&(' separated values.
+Is the Company the client?
+[y=client/n=contractor] 
+Enter one or more " ' separated values.
+Is the Company the client?
+[y=client/n=contractor] 
+Enter one or more " ' separated values.
+Is the Company the client? [y=client/n=contractor]
+
+1) Hi
+2) Bye
+
+Enter one or more comma separated selections.
+Is the Company the client? [y=client/n=contractor]
+
+1) Hi
+2) Bye
+
+Enter one or more comma separated selections.
+Is the Company the client? [y=client/n=contractor]
+
+1) Hi
+2) Bye
+
+Enter one or more comma separated selections.
+Is the Company the client? [y=client/n=contractor]
+
+1) Hi
+2) Bye
+
+Enter one or more "|' separated selections.
+Is the Company the client? [y=client/n=contractor]
+
+1) Hi
+2) Bye
+
+Enter one or more "~' separated selections.
+Is the Company the client? [y=client/n=contractor]
+
+1) Hi
+2) Bye
+
+Enter one or more "|&(' separated selections.
+Is the Company the client? [y=client/n=contractor]
+
+1) Hi
+2) Bye
+
+Enter one or more " ' separated selections.
+Is the Company the client? [y=client/n=contractor]
+
+1) Hi
+2) Bye
+
+Enter one or more " ' separated selections.
+Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] Is the Company the client?
+[y=client/n=contractor] 
+Enter one or more comma separated values.
+Is the Company the client?
+[y=client/n=contractor] 
+Enter one or more comma separated values.
+Is the Company the client?
+[y=client/n=contractor] 
+Enter one or more comma separated values.
+Is the Company the client?
+[y=client/n=contractor] 
+Enter one or more comma separated values.
+Is the Company the client?
+[y=client/n=contractor] 
+PASS lib/test/questioner.test.js
+  Questioner
+    QnA flow
+      ✓ skips questions with a pre-existing parameter value (from previous question) (78 ms)
+      ✓ question is skipped if parameter defined in initial values (1 ms)
+      ✓ initially defined string values are transformed according to the parameter type (bool: false) (1 ms)
+      ✓ initially defined string values are transformed according to the parameter type (int: 100)
+      ✓ initially defined string values are transformed according to the parameter type (int: -1)
+      ✓ when question is condition-skipped, uses 'elseValue' if present (2 ms)
+      ✓ Will re-ask questions when answer form invalid (95 ms)
+      ✓ Will raise an exception on an invalid parameter type. (29 ms)
+      ✓ Will raise an exception on no 'parameter' for question. (1 ms)
+    boolean questions
+      ✓ simple boolean question answer '1' -> 1 (18 ms)
+      ✓ simple boolean question answer '0' -> 0 (1 ms)
+      ✓ simple boolean question answer '-1' -> -1 (2 ms)
+      ✓ simple boolean question answer 'y' -> true (1 ms)
+      ✓ simple boolean question answer 'n' -> false
+      ✓ simple boolean question answer 'Y' -> true (1 ms)
+      ✓ simple boolean question answer 'N' -> false (1 ms)
+      ✓ simple boolean question answer 't' -> true (1 ms)
+      ✓ simple boolean question answer 'T' -> true (3 ms)
+      ✓ simple boolean question answer 'f' -> false (1 ms)
+      ✓ simple boolean question answer 'F' -> false (1 ms)
+      ✓ simple boolean question answer 'yes' -> true (1 ms)
+      ✓ simple boolean question answer 'Yes' -> true
+      ✓ simple boolean question answer 'no' -> false (1 ms)
+      ✓ simple boolean question answer 'No' -> false
+      ✓ simple boolean question answer 'true' -> true (1 ms)
+      ✓ simple boolean question answer 'True' -> true (1 ms)
+      ✓ simple boolean question answer 'false' -> false
+      ✓ simple boolean question answer 'False' -> false (1 ms)
+    Mappings
+      ✓ value map no -> them (1 ms)
+      ✓ source map 'FAVE_INT'=1, yields 'FAVE_DIFF'=2' (1 ms)
+      ✓ source map 'FAVE_INT'=1, yields 'IS_FAVE_NOT_ZERO'=true' (1 ms)
+      ✓ source map 'FAVE_INT'=0, yields 'IS_FAVE_NOT_ZERO'=false' (1 ms)
+      ✓ maps 'source'd paramType bool input 'y' -> true
+      ✓ maps 'source'd paramType int input '1' -> 1 (1 ms)
+    Conditional questions
+      ✓ Conditional question yes -> Do you like milk? (90 ms)
+      ✓ Conditional question no -> Is this the end? (86 ms)
+      ✓ when question is condition-skipped, uses 'elseSource' if present
+    Value transforms
+      ✓ Value 'true' type 'boolean' -> true
+      ✓ Value 'true' type 'bool' -> true (1 ms)
+      ✓ Value 'true' type 'string' -> "true"
+      ✓ Value '5' type 'integer' -> 5 (1 ms)
+      ✓ Value '5.5' type 'float' -> 5.5
+      ✓ Value '6.6' type 'numeric' -> 6.6 (1 ms)
+    multi-value input (free form)
+      ✓ Answer 'Hi' sep 'undefined' -> ["Hi"]
+      ✓ Answer 'Hi,Bye' sep 'undefined' -> ["Hi", "Bye"] (1 ms)
+      ✓ Answer ' Hi, Bye ' sep 'undefined' -> ["Hi", "Bye"]
+      ✓ Answer 'Hi,Bye' sep '|' -> ["Hi,Bye"] (1 ms)
+      ✓ Answer 'Hi|Bye' sep '|' -> ["Hi", "Bye"]
+      ✓ Answer 'Hi~Bye' sep '~' -> ["Hi", "Bye"] (2 ms)
+      ✓ Answer 'Hi.Bye' sep '.' -> ["Hi", "Bye"] (1 ms)
+      ✓ Answer 'Hi&Bye' sep '&' -> ["Hi", "Bye"]
+      ✓ Answer 'Hi(Bye' sep '(' -> ["Hi", "Bye"] (1 ms)
+      ✓ Answer 'Hi)Bye' sep ')' -> ["Hi", "Bye"]
+      ✓ Answer 'Hi{Bye' sep '{' -> ["Hi", "Bye"] (1 ms)
+      ✓ Answer 'Hi}Bye' sep '}' -> ["Hi", "Bye"] (1 ms)
+      ✓ Answer 'Hi|&(Bye' sep '|&(' -> ["Hi", "Bye"]
+      ✓ Answer 'Hi Bye' sep ' ' -> ["Hi", "Bye"]
+      ✓ Answer ' Hi   Bye ' sep ' ' -> ["Hi", "Bye"] (1 ms)
+    multi-value input (option locked)
+      ✓ Answer '1' sep 'undefined' -> ["Hi"] (1 ms)
+      ✓ Answer '1,2' sep 'undefined' -> ["Hi", "Bye"] (1 ms)
+      ✓ Answer ' 1, 2 ' sep 'undefined' -> ["Hi", "Bye"]
+      ✓ Answer '1|2' sep '|' -> ["Hi", "Bye"] (1 ms)
+      ✓ Answer '1~2' sep '~' -> ["Hi", "Bye"]
+      ✓ Answer '1|&(2' sep '|&(' -> ["Hi", "Bye"] (1 ms)
+      ✓ Answer '1 2' sep ' ' -> ["Hi", "Bye"]
+      ✓ Answer ' 1   2 ' sep ' ' -> ["Hi", "Bye"]
+    answer requirements (single value)
+      ✓ Value 'Hi' (string) and requirement requireSomething=true is accepted (1 ms)
+      ✓ Value '1' (int) and requirement requireSomething=true is accepted
+      ✓ Value 'true' (bool) and requirement requireSomething=true is accepted (1 ms)
+      ✓ Value 'Hi' (string) and requirement requireTruthy=true is accepted
+      ✓ Value '1' (int) and requirement requireTruthy=true is accepted
+      ✓ Value 'true' (bool) and requirement requireTruthy=true is accepted (1 ms)
+      ✓ Value 'Hi' (string) and requirement requireExact=Hi is accepted
+      ✓ Value '1' (int) and requirement requireExact=1 is accepted (1 ms)
+      ✓ Value 'true' (bool) and requirement requireExact=true is accepted
+      ✓ Value 'false' (bool) and requirement requireExact=false is accepted
+      ✓ Value 'Hi' (string) and requirement requireOneOf=[ 'Hi', 'Bye' ] is accepted (1 ms)
+      ✓ Value '1' (int) and requirement requireOneOf=[ 1, 2 ] is accepted
+      ✓ Value 'true' (bool) and requirement requireOneOf=[ true, false ] is accepted (1 ms)
+      ✓ Value 'false' (bool) and requirement requireOneOf=[ false, true ] is accepted
+      ✓ Value 'Hi' (string) and requirement requireMatch=Hi is accepted
+      ✓ Value 'Hi' (string) and requirement requireMatch=[Hi]* is accepted (1 ms)
+      ✓ Value 'Hi' (string) and requirement requireMatch=^[Hi]*$ is accepted
+      ✓ Value '' (string) and requirement requireSomething=true is rejected (72 ms)
+      ✓ Value '' (string) and requirement requireTruthy=true is rejected (57 ms)
+      ✓ Value '0' (int) and requirement requireTruthy=true is rejected (54 ms)
+      ✓ Value 'false' (bool) and requirement requireExact=true is rejected (55 ms)
+      ✓ Value 'Hi' (string) and requirement requireExact=Bye is rejected (71 ms)
+      ✓ Value '1' (int) and requirement requireExact=2 is rejected (72 ms)
+      ✓ Value 'true' (bool) and requirement requireExact=false is rejected (55 ms)
+      ✓ Value 'false' (bool) and requirement requireExact=true is rejected (91 ms)
+      ✓ Value 'Hello' (string) and requirement requireOneOf=Hi, Bye is rejected (77 ms)
+      ✓ Value '10' (int) and requirement requireOneOf=1,2 is rejected (54 ms)
+      ✓ Value 'false' (bool) and requirement requireOneOf=true is rejected (55 ms)
+      ✓ Value 'Hi' (string) and requirement requireMatch=Bye is rejected (55 ms)
+      ✓ Value 'Hi' (string) and requirement requireMatch=^[Bye]*$ is rejected (54 ms)
+    answer requirements (multi value)
+      ✓ Value 'Hi,Bye' (requireMinCount) and requirement 1=%s is accepted (1 ms)
+      ✓ Value 'Hi,Bye' (requireMinCount) and requirement 2=%s is accepted
+      ✓ Value 'Hi,Bye' (requireMaxCount) and requirement 3=%s is accepted (1 ms)
+      ✓ Value 'Hi,Bye' (requireMaxCount) and requirement 2=%s is accepted
+      ✓ Value 'Hi' (requireMinCount) and requirement 2=%s is rejected (56 ms)
+      ✓ Value 'Hi,Bye' (requireMinCount) and requirement 3=%s is rejected (54 ms)
+      ✓ Value 'Hi,Bye' (requireMaxCount) and requirement 1=%s is rejected (54 ms)
+      ✓ Value 'Hi,Bye,Blah' (requireMaxCount) and requirement 2=%s is rejected (54 ms)
+    cookie parameters
+      ✓ are passed from questions
+      ✓ are passed from maps
+    statements
+      ✓ prints statement (67 ms)
+      ✓ properly skips condition skip statements (53 ms)
+
+----------------|---------|----------|---------|---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+File            | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s                                                                                                                                                            
+----------------|---------|----------|---------|---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+All files       |   66.02 |    63.39 |   76.47 |   65.78 |                                                                                                                                                                              
+ questioner.mjs |   66.02 |    63.39 |   76.47 |   65.78 | 86,93-97,105,116-121,138-139,142,172,191-196,245-264,271-272,297,304,314,333-400,406,412,422,425,437,445,454-456,477,500,509-515,525,531,543,546,549,553,556,559,564,570,574 
+----------------|---------|----------|---------|---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Test Suites: 1 passed, 1 total
+Tests:       108 passed, 108 total
+Snapshots:   0 total
+Time:        1.772 s, estimated 3 s
+Ran all test suites.
