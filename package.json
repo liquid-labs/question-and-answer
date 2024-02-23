@@ -1,5 +1,5 @@
 {
-  "name": "@liquid-labs/question-and-answer",
+  "name": "question-and-answer",
   "version": "1.0.0-alpha.15",
   "description": "Library providing command-line question and answer functionality.",
   "main": "dist/question-and-answer.js",
@@ -22,7 +22,10 @@
   "keywords": [],
   "author": "Zane Rockenbaugh <zane@liquid-labs.com>",
   "license": "Apache-2.0",
-  "repository": "git+ssh://git@github.com/liquid-labs/question-and-answer.git",
+  "repository": {
+    "url": "git+ssh://git@github.com/liquid-labs/question-and-answer.git",
+    "type": "git"
+  },
   "bugs": {
     "url": "https://github.com/liquid-labs/question-and-answer/issues"
   },
@@ -46,5 +49,8 @@
         "@liquid-labs/sdlc-resource-*"
       ]
     }
+  },
+  "_comply": {
+    "orgKey": "@liquid-labs"
   }
 }
