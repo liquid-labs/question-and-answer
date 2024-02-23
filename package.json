@@ -1,6 +1,6 @@
 {
   "name": "question-and-answer",
-  "version": "1.0.0-alpha.15",
+  "version": "1.0.0-alpha.16",
   "description": "Library providing command-line question and answer functionality.",
   "main": "dist/question-and-answer.js",
   "module": "dist/question-and-answer.mjs",
