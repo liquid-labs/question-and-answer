@@ -17,10 +17,10 @@ import * as readline from 'node:readline'
 
 import columns from 'cli-columns'
 import createError from 'http-errors'
+import { getPrinter } from 'magic-print'
 
 import { Evaluator } from '@liquid-labs/condition-eval'
-import { formatTerminalText } from '@liquid-labs/terminal-text'
-import { wrap } from '@liquid-labs/wrap-text'
+
 
 // disposition constants
 const ANSWERED = 'answered'
@@ -34,24 +34,21 @@ const Questioner = class {
   #interrogationBundle = []
   #noSkipDefined
   #results = []
-  #width
-  #wrap
 
   constructor({
     input = process.stdin,
-    output = process.stdout,
+    output,
     interrogationBundle,
     initialParameters = {},
     noSkipDefined = false,
-    width // leave undefined and take the 'wrap' default width if none provided
+    printOptions
   } = {}) {
     this.#input = input
-    this.#output = output
+    const print = getPrinter(printOptions)
+    this.#output = output || { write: print }
     this.#interrogationBundle = structuredClone(interrogationBundle)
     this.#initialParameters = initialParameters
     this.#noSkipDefined = noSkipDefined
-    this.#width = width
-    this.#wrap = (text, options) => wrap(text, Object.assign({ width : this.#width, ignoreTags : true }, options))
 
     this.#verifyInterrogationBundle()
 
@@ -106,12 +103,12 @@ const Questioner = class {
         }
 
         // the '\n' puts the input cursor below the prompt for consistency
-        prompt = this.#wrap(prompt) + '\n' + hint
+        prompt += '\n' + hint
       }
       else {
-        prompt = this.#wrap(prompt) + '\n\n'
+        prompt += '\n\n'
         const cliOptions = q.options.map((o, i) => (i + 1) + ') ' + o)
-        prompt += columns(cliOptions, { width : this.width }) + '\n'
+        prompt += columns(cliOptions, { width : this.#output.width }) + '\n'
         if (defaultValue !== undefined) {
           const defaultI = q.options.indexOf(defaultValue)
           if (defaultI === -1) {
@@ -125,14 +122,14 @@ const Questioner = class {
 
       if (q.multiValue === true) {
         const sepDesc = q.separator === undefined ? 'comma' : `"${q.separator}'`
-        prompt += this.#wrap(`\nEnter one or more ${sepDesc} separated ${q.options ? 'selections' : 'values'}.\n`)
+        prompt += `\nEnter one or more ${sepDesc} separated ${q.options ? 'selections' : 'values'}.\n`
       }
 
-      rl.setPrompt(formatTerminalText(prompt))
-      rl.prompt()
+      this.#output.write('\n' + prompt)
+      // rl.setPrompt(formatTerminalText(prompt))
+      // rl.prompt()
 
       const it = rl[Symbol.asyncIterator]()
-
       let answer = (await it.next()).value.trim() || defaultValue || ''
       if (answer === '-') {
         answer = undefined
@@ -188,9 +185,8 @@ const Questioner = class {
         this.#addResult({ source : q, value })
       }
       else { // the 'answer form' is invalid; let's try again
-        verifyResult = '<warn>' + verifyResult + '<rst>'
-        verifyResult = this.#wrap(verifyResult) + '\n'
-        this.#output.write(formatTerminalText(verifyResult))
+        verifyResult = '<warn>' + verifyResult + '<rst>\n'
+        this.#output.write(verifyResult)
         rl.close() // we'll create a new one
         this.#output.write('\n')
         await this.#askQuestion(q)
@@ -243,7 +239,7 @@ const Questioner = class {
         this.#processMapping(action)
       }
       else if (action.statement !== undefined) { // it's a statement
-        this.#output.write(formatTerminalText(this.#wrap(action.statement) + '\n'))
+        this.#output.write(action.statement + '\n')
       }
       else if (action.review !== undefined) { // it's a review
         const [result, included] = await this.#processReview(action)
@@ -379,13 +375,14 @@ const Questioner = class {
 
     const header = `<h2>Review ${included.length} ${reviewType === 'all' ? 'values' : 'answers'}:<rst>`
 
-    this.#output.write(formatTerminalText(this.#wrap(header + '\n' + reviewText, { hangingIndent : 2 })))
+    this.#output.write(header + '\n' + reviewText, { hangingIndent : 2 })
 
     while (true) {
       const rl = readline.createInterface({ input : this.#input, output : this.#output, terminal : false })
       try {
-        rl.setPrompt(formatTerminalText('\n<bold>Verified?<rst> [y/n] '))
-        rl.prompt()
+        this.#output.write('\n<bold>Verified?<rst> [y/n] ')
+        // rl.setPrompt(formatTerminalText('\n<bold>Verified?<rst> [y/n] '))
+        // rl.prompt()
 
         const it = rl[Symbol.asyncIterator]()
         const answer = (await it.next()).value.trim()
@@ -394,7 +391,7 @@ const Questioner = class {
           return [transformStringValue({ paramType : 'boolean', value : answer }), included]
         }
         else {
-          this.#output.write(formatTerminalText(this.#wrap(`<warn>${result}<rst>`) + '\n'))
+          this.#output.write(`<warn>${result}<rst>` + '\n')
         }
       }
       finally { rl.close() }

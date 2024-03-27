@@ -32,16 +32,14 @@
   "homepage": "https://github.com/liquid-labs/question-and-answer#readme",
   "dependencies": {
     "@liquid-labs/condition-eval": "^1.0.0-alpha.18",
-    "@liquid-labs/terminal-text": "^1.0.0-alpha.3",
-    "@liquid-labs/wrap-text": "^1.0.0-alpha.7",
-    "cli-columns": "^4.0.0"
+    "cli-columns": "^4.0.0",
+    "magic-print": "file:.yalc/magic-print"
   },
   "devDependencies": {
     "@liquid-labs/sdlc-resource-babel-and-rollup": "^1.0.0-alpha.5",
     "@liquid-labs/sdlc-resource-eslint": "^1.0.0-alpha.2",
     "@liquid-labs/sdlc-resource-jest": "^1.0.0-alpha.5",
-    "http-errors": "^2.0.0",
-    "mock-stdin": "^1.0.0"
+    "http-errors": "^2.0.0"
   },
   "_npm-check-plus": {
     "depcheck": {
