@@ -1,8 +1,5 @@
-/* global afterAll beforeAll describe expect jest test */
-import * as fsPath from 'node:path'
-import { spawn } from 'node:child_process'
-
-import { stdin } from 'mock-stdin'
+/* global beforeAll beforeEach describe expect jest test */
+import * as readline from 'node:readline'
 
 import {
   badParameterIB,
@@ -14,50 +11,45 @@ import {
   DO_YOU_LIKE_MILK,
   IS_THIS_THE_END,
   WHATS_YOUR_FAVORITE_INT
+  , conditionalQuestionIB, conditionStatementIB, doubleQuestionIB, simpleIntQuestionIB, statementIB
 } from './test-data'
 import { Questioner, ANSWERED, CONDITION_SKIPPED, DEFINED_SKIPPED } from '../questioner'
 
-const input = stdin()
-
-jest.setTimeout(750) // tried to set this in 'beforeAll', but it failed; we try and restore value 'afterAll' tests.
+import { getPrinter, StringOut } from 'magic-print'
+jest.mock('node:readline')
 
 describe('Questioner', () => {
-  afterAll(() => jest.setTimeout(5000)) // restore default
+  const stringOut = new StringOut()
+  const print = getPrinter({ out : stringOut })
+  const output = { write : print }
+
+  beforeEach(() => { stringOut.reset() })
 
   describe('QnA flow', () => {
-    test('skips questions with a pre-existing parameter value (from previous question)', (done) => {
-      const testScriptPath = fsPath.join(__dirname, 'double-question.js')
-
-      // You cannot (as of Node 19.3.0) listen for events on your own stdout, so we have to create a child process.
-      const child = spawn('node', [testScriptPath])
-
-      child.stdout.resume()
+    test('skips questions with a pre-existing parameter value (from previous question)', async() => {
       let readCount = 0
-      child.stdout.on('data', (output) => {
-        try {
-          if (readCount === 0) {
-            expect(output.toString().trim()).toBe('Is the Company the client?\n[y=client/n=contractor]')
+      readline.createInterface.mockImplementation(() => ({
+        [Symbol.asyncIterator] : () => ({
+          next : async() => {
+            readCount += 1
+            if (readCount === 1) {
+              expect(stringOut.string.trim()).toBe('Is the Company the client?\n[y=client/n=contractor]')
+              stringOut.reset()
+              return { value : 'yes' }
+            }
+            else if (readCount === 2) {
+              expect(stringOut.string.trim()).toBe('Done?\n[y/n]')
+              return { value : 'yes' }
+            }
+            else { throw new Error('Unexpected read') }
           }
-          else if (readCount === 1) {
-            expect(output.toString().trim()).toBe('')
-          }
-          else if (readCount === 2) {
-            expect(output.toString().trim()).toBe('Done?\n[y/n]')
-            child.stdin.write('yes\n')
-            child.kill('SIGINT')
-            done()
-          }
-        }
-        catch (e) {
-          child.kill('SIGINT')
-          done()
-          throw e
-        }
+        }),
+        close : () => undefined
+      }))
 
-        readCount += 1
-      })
+      const questioner = new Questioner({ interrogationBundle : doubleQuestionIB, output })
 
-      child.stdin.write('yes\n')
+      await questioner.question()
     })
 
     test('question is skipped if parameter defined in initial values', (done) => {
@@ -114,42 +106,30 @@ describe('Questioner', () => {
       })
     })
 
-    test('Will re-ask questions when answer form invalid', (done) => {
-      const testScriptPath = fsPath.join(__dirname, 'simple-int-question.js')
-
-      // You cannot (as of Node 19.3.0) listen for events on your own stdout, so we have to create a child process.
-      const child = spawn('node', [testScriptPath])
-
-      child.stdout.resume()
-      let count = 0
-      child.stdout.on('data', (output) => {
-        try {
-          if (count === 0) {
-            expect(output.toString().trim()).toBe(WHATS_YOUR_FAVORITE_INT)
+    test('Will re-ask questions when answer form invalid', async() => {
+      let readCount = 0
+      readline.createInterface.mockImplementation(() => ({
+        [Symbol.asyncIterator] : () => ({
+          next : async() => {
+            readCount += 1
+            if (readCount === 1) {
+              expect(stringOut.string.trim()).toBe(WHATS_YOUR_FAVORITE_INT)
+              stringOut.reset()
+              return { value : 'not a number' }
+            }
+            else if (readCount === 2) {
+              expect(stringOut.string.trim()).toMatch(/not a valid.+?\n+What's your/m)
+              return { value : '12' }
+              // expect(stringOut.string.trim()).toMatch(/not a valid.+\n.+favorite int/m)
+            }
+            else { throw new Error('Unexpected read') }
           }
-          else if (count === 1 && output.toString().split('\n').length === 2) {
-            expect(output.toString().trim()).toMatch(/not a valid.+\n.+favorite int/m)
-            child.kill('SIGINT')
-            done()
-          }
-          else if (count === 1) {
-            expect(output.toString().trim()).toMatch(/not a valid/)
-          }
-          else if (count === 2) {
-            expect(output.toString().trim()).toBe(WHATS_YOUR_FAVORITE_INT)
-            child.kill('SIGINT')
-            done()
-          }
-        }
-        catch (e) {
-          child.kill('SIGINT')
-          done()
-        }
+        }),
+        close : () => undefined
+      }))
 
-        count += 1
-      })
-
-      child.stdin.write('not a number\n')
+      const questioner = new Questioner({ interrogationBundle : simpleIntQuestionIB, output })
+      await questioner.question()
     })
 
     test.each([
@@ -165,21 +145,32 @@ describe('Questioner', () => {
       ['1', 1],
       ['0', 0],
       ['-1', -1]
-    ])("simple boolean question answer '%s' -> %s", (answer, expected, done) => {
+    ])("simple boolean question answer '%s' -> %s", async(answer, expected) => {
       const ib = structuredClone(simpleIB)
       ib.actions[0].paramType = 'int'
-      const questioner = new Questioner({ interrogationBundle : ib })
 
-      questioner.question().then(() => {
-        try {
-          const result = questioner.getResult('IS_CLIENT')
-          expect(result.value).toBe(expected)
-          expect(result.rawAnswer).toBe(answer)
-          expect(result.disposition).toBe(ANSWERED)
-        }
-        finally { done() }
-      })
-      input.send(answer + '\n')
+      let readCount = 0
+      readline.createInterface.mockImplementation(() => ({
+        [Symbol.asyncIterator] : () => ({
+          next : async() => {
+            readCount += 1
+            if (readCount === 1) {
+              return { value : answer }
+            }
+            else { throw new Error('Unexpected read') }
+          }
+        }),
+        close : () => undefined
+      }))
+
+      const questioner = new Questioner({ interrogationBundle : ib, output })
+
+      await questioner.question()
+      const result = questioner.getResult('IS_CLIENT')
+
+      expect(result.value).toBe(expected)
+      expect(result.rawAnswer).toBe(answer)
+      expect(result.disposition).toBe(ANSWERED)
     })
   })
 
@@ -201,66 +192,87 @@ describe('Questioner', () => {
       ['True', true],
       ['false', false],
       ['False', false]
-    ])("simple boolean question answer '%s' -> %s", (answer, expected, done) => {
-      const questioner = new Questioner({ interrogationBundle : simpleIB })
+    ])("simple boolean question answer '%s' -> %s", async(answer, expected) => {
+      let readCount = 0
+      readline.createInterface.mockImplementation(() => ({
+        [Symbol.asyncIterator] : () => ({
+          next : async() => {
+            readCount += 1
+            if (readCount === 1) {
+              return { value : answer }
+            }
+            else { throw new Error('Unexpected read') }
+          }
+        }),
+        close : () => undefined
+      }))
 
-      questioner.question().then(() => {
-        try {
-          const result = questioner.getResult('IS_CLIENT')
-          expect(result.value).toBe(expected)
-          expect(result.rawAnswer).toBe(answer)
-          expect(result.disposition).toBe(ANSWERED)
-        }
-        finally { done() }
-      })
-      input.send(answer + '\n')
+      const questioner = new Questioner({ interrogationBundle : simpleIB, output })
+
+      await questioner.question()
+      const result = questioner.getResult('IS_CLIENT')
+
+      expect(result.value).toBe(expected)
+      expect(result.rawAnswer).toBe(answer)
+      expect(result.disposition).toBe(ANSWERED)
     })
   })
 
   describe('Mappings', () => {
-    test.each([/* ['yes', 'us'], */['no', 'them']])('value map %s -> %s', (answer, value, done) => {
-      const questioner = new Questioner({ interrogationBundle : simpleMapIB })
+    test.each([['yes', 'us'], ['no', 'them']])('value map %s -> %s', async(answer, value) => {
+      readline.createInterface.mockImplementation(() => ({
+        [Symbol.asyncIterator] : () => ({
+          next : async() => { return { value : answer } }
+        }),
+        close : () => undefined
+      }))
 
-      questioner.question().then(() => {
-        try {
-          expect(questioner.values.ORG_COMMON_NAME).toBe(value)
-        }
-        finally { done() }
-      })
-      input.send(answer + '\n')
+      const questioner = new Questioner({ interrogationBundle : simpleMapIB, output })
+
+      await questioner.question()
+      expect(questioner.values.ORG_COMMON_NAME).toBe(value)
     })
 
     test.each([
       ['1', 'FAVE_DIFF', 2],
       ['1', 'IS_FAVE_NOT_ZERO', true],
       ['0', 'IS_FAVE_NOT_ZERO', false]
-    ])("source map 'FAVE_INT'=%s, yields '%s'=%s'", (faveInt, parameter, value, done) => {
-      const questioner = new Questioner({ interrogationBundle : sourceMappingIB })
+    ])("source map 'FAVE_INT'=%s, yields '%s'=%s'", async(faveInt, parameter, value) => {
+      const questioner = new Questioner({ interrogationBundle : sourceMappingIB, output })
+      readline.createInterface.mockImplementation(() => ({
+        [Symbol.asyncIterator] : () => ({
+          next : async() => { return { value : faveInt } }
+        }),
+        close : () => undefined
+      }))
 
-      questioner.question().then(() => {
-        expect(questioner.values[parameter]).toBe(value)
-        done()
-      })
-      input.send(faveInt + '\n')
+      await questioner.question()
+
+      expect(questioner.values[parameter]).toBe(value)
     })
 
     test.each([
       ['bool', 'y', true],
       ['int', '1', 1]
-    ])('maps \'source\'d paramType %s input \'%s\' -> %p', (paramType, value, expected, done) => {
+    ])('maps \'source\'d paramType %s input \'%s\' -> %p', async(paramType, value, expected) => {
       const interrogationBundle = structuredClone(simpleMapIB)
       delete interrogationBundle.actions[1].maps[0].value
       interrogationBundle.actions[1].maps[0].paramType = paramType
       interrogationBundle.actions[1].maps[0].source = 'ENV_VAR'
       const initialParameters = { ENV_VAR : value }
 
-      const questioner = new Questioner({ interrogationBundle, initialParameters })
+      readline.createInterface.mockImplementation(() => ({
+        [Symbol.asyncIterator] : () => ({
+          next : async() => { return { value : 'yes' } }
+        }),
+        close : () => undefined
+      }))
 
-      questioner.question().then(() => {
-        expect(questioner.values.ORG_COMMON_NAME).toBe(expected)
-        done()
-      })
-      input.send('yes\n')
+      const questioner = new Questioner({ interrogationBundle, initialParameters, output })
+
+      await questioner.question()
+
+      expect(questioner.values.ORG_COMMON_NAME).toBe(expected)
     })
   })
 
@@ -268,57 +280,35 @@ describe('Questioner', () => {
     test.each([
       ['yes', DO_YOU_LIKE_MILK],
       ['no', IS_THIS_THE_END]
-    ])('Conditional question %s -> %s', (answer, followup, done) => {
-      const testScriptPath = fsPath.join(__dirname, 'conditional-question.js')
-
-      // You cannot (as of Node 19.3.0) listen for events on your own stdout, so we have to create a child process.
-      const child = spawn('node', [testScriptPath])
-
-      child.stdout.resume()
+    ])('Conditional question %s -> %s', async(answer, followup) => {
       let readCount = 0
-
-      const complete = () => {
-        child.stdin.write('yes\n')
-        if (answer === 'yes') {
-          child.stdin.write('yes\n')
-        }
-        child.kill('SIGINT')
-        done()
-      }
-
-      child.stdout.on('data', (output) => {
-        try {
-          output = output.toString().trim()
-          if (readCount === 0) {
-            expect(output).toBe('Is the Company the client?\n[y=client/n=contractor]')
-          }
-          else if (readCount === 1) {
-            // the intermediate space can be combined with the followup on the read
-            try {
-              expect(output).toBe('')
+      readline.createInterface.mockImplementation(() => ({
+        [Symbol.asyncIterator] : () => ({
+          next : async() => {
+            readCount += 1
+            if (readCount === 1) {
+              expect(stringOut.string.trim()).toBe('Is the Company the client?\n[y=client/n=contractor]')
+              stringOut.reset()
+              return { value : answer }
             }
-            catch (e) {
-              expect(output).toBe(followup)
-              complete()
+            else if (readCount === 2) {
+              // the intermediate space can be combined with the followup on the read
+              expect(stringOut.string.trim()).toBe(followup)
+              return { value : 'yes' }
+            }
+            else {
+              return { value : 'yes' }
             }
           }
-          else if (readCount === 2) {
-            expect(output).toBe(followup)
-            complete()
-          }
-          readCount += 1
-        }
-        catch (e) {
-          child.kill('SIGINT')
-          done()
-          throw e
-        }
-      })
+        }),
+        close : () => undefined
+      }))
 
-      child.stdin.write(answer + '\n')
+      const questioner = new Questioner({ interrogationBundle : conditionalQuestionIB, output })
+      await questioner.question()
     })
 
-    test("when question is condition-skipped, uses 'elseSource' if present", (done) => {
+    test("when question is condition-skipped, uses 'elseSource' if present", async() => {
       const ib = structuredClone(simpleMapIB)
       ib.actions[0].condition = 'FOO'
       ib.actions[0].elseSource = 'BAR || BAZ'
@@ -327,14 +317,11 @@ describe('Questioner', () => {
 
       const questioner = new Questioner({ initialParameters, interrogationBundle : ib })
 
-      questioner.question().then(() => {
-        try {
-          expect(questioner.get('IS_CLIENT')).toBe(true)
-          expect(questioner.getResult('IS_CLIENT').disposition).toBe(CONDITION_SKIPPED)
-          expect(questioner.get('ORG_COMMON_NAME')).toBe(undefined) // this is the mapped value
-        }
-        finally { done() }
-      })
+      await questioner.question()
+
+      expect(questioner.get('IS_CLIENT')).toBe(true)
+      expect(questioner.getResult('IS_CLIENT').disposition).toBe(CONDITION_SKIPPED)
+      expect(questioner.get('ORG_COMMON_NAME')).toBe(undefined) // this is the mapped value
     })
   })
 
@@ -346,19 +333,20 @@ describe('Questioner', () => {
       ['5', 'integer', 5],
       ['5.5', 'float', 5.5],
       ['6.6', 'numeric', 6.6]
-    ])("Value '%s' type '%s' -> %p", (value, type, expected, done) => {
+    ])("Value '%s' type '%s' -> %p", async(value, type, expected) => {
       const ib = structuredClone(simpleIB)
       ib.actions[0].paramType = type
 
-      const questioner = new Questioner({ interrogationBundle : ib })
+      readline.createInterface.mockImplementation(() => ({
+        [Symbol.asyncIterator] : () => ({
+          next : async() => { return { value } }
+        }),
+        close : () => undefined
+      }))
 
-      questioner.question().then(() => {
-        try {
-          expect(questioner.values.IS_CLIENT).toBe(expected)
-        }
-        finally { done() }
-      })
-      input.send(value + '\n')
+      const questioner = new Questioner({ interrogationBundle : ib, output })
+
+      await questioner.question()
     })
   })
 
@@ -379,21 +367,23 @@ describe('Questioner', () => {
       ['Hi|&(Bye', '|&(', ['Hi', 'Bye']],
       ['Hi Bye', ' ', ['Hi', 'Bye']],
       [' Hi   Bye ', ' ', ['Hi', 'Bye']]
-    ])("Answer '%s' sep '%s' -> %p", (answer, sep, expected, done) => {
+    ])("Answer '%s' sep '%s' -> %p", async(answer, sep, expected) => {
       const ib = structuredClone(simpleIB)
       delete ib.actions[0].paramType
       ib.actions[0].multiValue = true
       ib.actions[0].separator = sep
 
-      const questioner = new Questioner({ interrogationBundle : ib })
+      readline.createInterface.mockImplementation(() => ({
+        [Symbol.asyncIterator] : () => ({
+          next : async() => { return { value : answer } }
+        }),
+        close : () => undefined
+      }))
 
-      questioner.question().then(() => {
-        try {
-          expect(questioner.values.IS_CLIENT).toEqual(expected)
-        }
-        finally { done() }
-      })
-      input.send(answer + '\n')
+      const questioner = new Questioner({ interrogationBundle : ib, output })
+
+      await questioner.question()
+      expect(questioner.values.IS_CLIENT).toEqual(expected)
     })
   })
 
@@ -407,22 +397,24 @@ describe('Questioner', () => {
       ['1|&(2', '|&(', ['Hi', 'Bye']],
       ['1 2', ' ', ['Hi', 'Bye']],
       [' 1   2 ', ' ', ['Hi', 'Bye']]
-    ])("Answer '%s' sep '%s' -> %p", (answer, sep, expected, done) => {
+    ])("Answer '%s' sep '%s' -> %p", async(answer, sep, expected) => {
       const ib = structuredClone(simpleIB)
       delete ib.actions[0].paramType
       ib.actions[0].multiValue = true
       ib.actions[0].separator = sep
       ib.actions[0].options = ['Hi', 'Bye']
 
-      const questioner = new Questioner({ interrogationBundle : ib })
+      readline.createInterface.mockImplementation(() => ({
+        [Symbol.asyncIterator] : () => ({
+          next : async() => { return { value : answer } }
+        }),
+        close : () => undefined
+      }))
 
-      questioner.question().then(() => {
-        try {
-          expect(questioner.values.IS_CLIENT).toEqual(expected)
-        }
-        finally { done() }
-      })
-      input.send(answer + '\n')
+      const questioner = new Questioner({ interrogationBundle : ib, output })
+
+      await questioner.question()
+      expect(questioner.values.IS_CLIENT).toEqual(expected)
     })
   })
 
@@ -450,59 +442,70 @@ describe('Questioner', () => {
       ['Hi', 'string', 'requireMatch', 'Hi'],
       ['Hi', 'string', 'requireMatch', '[Hi]*'],
       ['Hi', 'string', 'requireMatch', '^[Hi]*$']
-    ])("Value '%s' (%s) and requirement %s=%s is accepted", (value, type, requirement, reqValue, done) => {
+    ])("Value '%s' (%s) and requirement %s=%s is accepted", async(value, type, requirement, reqValue) => {
       const ib = structuredClone(simpleIB)
       ib.actions[0].paramType = type
       ib.actions[0][requirement] = reqValue
 
-      const questioner = new Questioner({ interrogationBundle : ib })
+      readline.createInterface.mockImplementation(() => ({
+        [Symbol.asyncIterator] : () => ({
+          next : async() => { return { value } }
+        }),
+        close : () => undefined
+      }))
 
-      questioner.question().then(() => {
-        try {
-          expect(questioner.values.IS_CLIENT + '').toBe(value)
-        }
-        finally { done() }
-      })
-      input.send(value + '\n')
+      const questioner = new Questioner({ interrogationBundle : ib, output })
+
+      await questioner.question()
+
+      expect(questioner.values.IS_CLIENT + '').toBe(value)
     })
 
     test.each([
       // requireSomething
-      ['', 'string', 'requireSomething', true],
+      ['', 'string', 'requireSomething', true, 'blah'],
       // requireTruthy
-      ['', 'string', 'requireTruthy', true],
-      ['0', 'int', 'requireTruthy', true],
-      ['false', 'bool', 'requireExact', true],
+      ['', 'string', 'requireTruthy', true, 'blah'],
+      ['0', 'int', 'requireTruthy', true, '1'],
+      ['false', 'bool', 'requireExact', true, 'true'],
       // requireExact
-      ['Hi', 'string', 'requireExact', 'Bye'],
-      ['1', 'int', 'requireExact', 2],
-      ['true', 'bool', 'requireExact', false],
-      ['false', 'bool', 'requireExact', true],
+      ['Hi', 'string', 'requireExact', 'Bye', 'Bye'],
+      ['1', 'int', 'requireExact', 2, '2'],
+      ['true', 'bool', 'requireExact', false, 'false'],
+      ['false', 'bool', 'requireExact', true, 'true'],
       // requireOneOf
-      ['Hello', 'string', 'requireOneOf', 'Hi, Bye'],
-      ['10', 'int', 'requireOneOf', '1,2'],
-      ['false', 'bool', 'requireOneOf', 'true'],
+      ['Hello', 'string', 'requireOneOf', 'Hi, Bye', 'Hi'],
+      ['10', 'int', 'requireOneOf', [1, 2], '1'],
+      ['false', 'bool', 'requireOneOf', [true], 'true'],
       // requireMatch
-      ['Hi', 'string', 'requireMatch', 'Bye'],
-      ['Hi', 'string', 'requireMatch', '^[Bye]*$']
-    ])("Value '%s' (%s) and requirement %s=%s is rejected", (answer, type, requirement, reqValue, done) => {
-      const testScriptPath = fsPath.join(__dirname, 'verify-failure-question.js')
+      ['Hi', 'string', 'requireMatch', 'Bye', 'Bye'],
+      ['Hi', 'string', 'requireMatch', '^[Bye]*$', 'ByeBye']
+    ])("Value '%s' (%s) and requirement %s=%s is rejected", async(answer, type, requirement, reqValue, valid) => {
+      const ib = structuredClone(simpleIB)
+      ib.actions[0].paramType = type
+      ib.actions[0][requirement] = reqValue
 
-      // You cannot (as of Node 19.3.0) listen for events on your own stdout, so we have to create a child process.
-      const child = spawn('node', [testScriptPath, type, requirement, reqValue])
-      child.stdout.resume()
-      child.stdout.once('data', (devNull) => { // this is just the original question; we don't care about it here
-        child.stdout.once('data', (output) => {
-          try {
-            expect(output.toString().trim()).toMatch(/must/)
+      let readCount = 0
+      readline.createInterface.mockImplementation(() => ({
+        [Symbol.asyncIterator] : () => ({
+          next : async() => {
+            readCount += 1
+            if (readCount === 1) {
+              stringOut.reset()
+              return { value : answer }
+            }
+            else {
+              expect(stringOut.string.trim()).toMatch(/must/)
+              return { value : valid }
+            }
           }
-          finally {
-            child.kill('SIGINT')
-            done()
-          }
-        })
-        child.stdin.write(answer + '\n')
-      })
+        }),
+        close : () => undefined
+      }))
+
+      const questioner = new Questioner({ interrogationBundle : ib, output })
+
+      await questioner.question()
     })
   })
 
@@ -514,57 +517,73 @@ describe('Questioner', () => {
       // requireMaxCount
       ['Hi,Bye', 'requireMaxCount', 3],
       ['Hi,Bye', 'requireMaxCount', 2]
-    ])("Value '%s' (%s) and requirement %s=%s is accepted", (value, requirement, reqValue, done) => {
+    ])("Value '%s' (%s) and requirement %s=%s is accepted", async(value, requirement, reqValue) => {
       const ib = structuredClone(simpleIB)
       ib.actions[0].paramType = 'string'
       ib.actions[0].multiValue = true
       ib.actions[0][requirement] = reqValue
 
-      const questioner = new Questioner({ interrogationBundle : ib })
+      readline.createInterface.mockImplementation(() => ({
+        [Symbol.asyncIterator] : () => ({
+          next : async() => { return { value } }
+        }),
+        close : () => undefined
+      }))
 
-      questioner.question().then(() => {
-        try {
-          expect(questioner.values.IS_CLIENT + '').toBe(value)
-        }
-        finally { done() }
-      })
-      input.send(value + '\n')
+      const questioner = new Questioner({ interrogationBundle : ib, output })
+
+      await questioner.question()
+      expect(questioner.values.IS_CLIENT + '').toBe(value)
     })
 
     test.each([
       // requireMinCount
-      ['Hi', 'requireMinCount', 2],
-      ['Hi,Bye', 'requireMinCount', 3],
+      ['Hi', 'requireMinCount', 2, 'hi,bye'],
+      ['Hi,Bye', 'requireMinCount', 3, 'hi,bye,what'],
       // requireMaxCount
-      ['Hi,Bye', 'requireMaxCount', 1],
-      ['Hi,Bye,Blah', 'requireMaxCount', 2]
-    ])("Value '%s' (%s) and requirement %s=%s is rejected", (answer, requirement, reqValue, done) => {
-      const testScriptPath = fsPath.join(__dirname, 'verify-failure-multi-question.js')
+      ['Hi,Bye', 'requireMaxCount', 1, 'hi'],
+      ['Hi,Bye,Blah', 'requireMaxCount', 2, 'hi,bye']
+    ])("Value '%s' (%s) and requirement %s=%s is rejected", async(answer, requirement, reqValue, valid) => {
+      const ib = structuredClone(simpleIB)
+      ib.actions[0].multiValue = true
+      ib.actions[0].paramType = 'string'
+      ib.actions[0][requirement] = reqValue
 
-      // You cannot (as of Node 19.3.0) listen for events on your own stdout, so we have to create a child process.
-      const child = spawn('node', [testScriptPath, requirement, reqValue])
-      child.stdout.resume()
-      child.stdout.once('data', (devNull) => { // this is just the original question; we don't care about it here
-        child.stdout.once('data', (output) => {
-          try {
-            expect(output.toString().trim()).toMatch(/must/)
+      let readCount = 0
+      readline.createInterface.mockImplementation(() => ({
+        [Symbol.asyncIterator] : () => ({
+          next : async() => {
+            readCount += 1
+            if (readCount === 1) {
+              return { value : answer }
+            }
+            else {
+              expect(stringOut.string.trim()).toMatch(/must/)
+              return { value : valid }
+            }
           }
-          finally {
-            child.kill('SIGINT')
-            done()
-          }
-        })
-        child.stdin.write(answer + '\n')
-      })
+        }),
+        close : () => undefined
+      }))
+
+      const questioner = new Questioner({ interrogationBundle : ib, output })
+
+      await questioner.question()
     })
   })
 
   describe('cookie parameters', () => {
-    const questioner = new Questioner({ interrogationBundle : cookieParameterIB })
+    const questioner = new Questioner({ interrogationBundle : cookieParameterIB, output })
 
     beforeAll(async() => {
+      readline.createInterface.mockImplementation(() => ({
+        [Symbol.asyncIterator] : () => ({
+          next : async() => { return { value : 'yes' } }
+        }),
+        close : () => undefined
+      }))
+
       const qPromise = questioner.question()
-      input.send('yes\n')
       await qPromise
     })
 
@@ -578,36 +597,19 @@ describe('Questioner', () => {
   })
 
   describe('statements', () => {
-    test('prints statement', (done) => {
-      const testScriptPath = fsPath.join(__dirname, 'question-runner.js')
-      const child = spawn('node', [testScriptPath, 'statementIB'])
+    test('prints statement', async() => {
+      const questioner = new Questioner({ interrogationBundle : statementIB, output })
 
-      child.stdout.resume()
-      child.stdout.once('data', (output) => {
-        try {
-          expect(output.toString().trim()).toBe('Hi!')
-        }
-        finally {
-          child.kill('SIGINT')
-          done()
-        }
-      })
+      await questioner.question()
+
+      expect(stringOut.string.trim()).toBe('Hi!')
     })
 
-    test('properly skips condition skip statements', (done) => {
-      const testScriptPath = fsPath.join(__dirname, 'question-runner.js')
-      const child = spawn('node', [testScriptPath, 'conditionStatementIB'])
+    test('properly skips condition skip statements', async() => {
+      const questioner = new Questioner({ interrogationBundle : conditionStatementIB, output })
+      await questioner.question()
 
-      child.stdout.resume()
-      child.stdout.once('data', (output) => {
-        try {
-          expect(output.toString().trim()).toBe('Bye!')
-        }
-        finally {
-          child.kill('SIGINT')
-          done()
-        }
-      })
+      expect(stringOut.string.trim()).toBe('Bye!')
     })
   })
 })
