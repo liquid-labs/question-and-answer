@@ -34,17 +34,33 @@ const Questioner = class {
   #noSkipDefined
   #results = []
 
+  /**
+   * Creates a `Questioner`.
+   * 
+   * @param {object} options.input - The object passed to `readline` as input. Default to `process.stdin`.
+   * @param {object} options.interrogationBundle - The interrogation spec.
+   * @param {object} options.initialParameters - Key/value object defining initial parameter values.
+   * @param {boolean} options.noSkipDefined - By default, questions related to defined parameters are skipped. If this 
+   *   option is true, then defined questions are asked.
+   * @param {object} options.output - The output object to use. Must define `write`. If not defined, then 'magic-print'
+   *   is is used.
+   * @param {object} options.printOptions - Options to pass to the 'magic-print' `getPrinter`. Ignored if `output` is 
+   *   provided.
+   */
   constructor({
     input = process.stdin,
-    output,
     interrogationBundle,
     initialParameters = {},
     noSkipDefined = false,
+    output,
     printOptions
   } = {}) {
     this.#input = input
-    const print = getPrinter(printOptions)
-    this.#output = output || { write : print }
+    if (output === undefined) {
+      const print = getPrinter(printOptions)  
+      output = { write : print }
+    }
+    this.#output = output
     this.#interrogationBundle = structuredClone(interrogationBundle)
     this.#initialParameters = initialParameters
     this.#noSkipDefined = noSkipDefined
