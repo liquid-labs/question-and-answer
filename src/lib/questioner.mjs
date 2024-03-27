@@ -36,15 +36,15 @@ const Questioner = class {
 
   /**
    * Creates a `Questioner`.
-   * 
+   *
    * @param {object} options.input - The object passed to `readline` as input. Default to `process.stdin`.
    * @param {object} options.interrogationBundle - The interrogation spec.
    * @param {object} options.initialParameters - Key/value object defining initial parameter values.
-   * @param {boolean} options.noSkipDefined - By default, questions related to defined parameters are skipped. If this 
+   * @param {boolean} options.noSkipDefined - By default, questions related to defined parameters are skipped. If this
    *   option is true, then defined questions are asked.
    * @param {object} options.output - The output object to use. Must define `write`. If not defined, then 'magic-print'
    *   is is used.
-   * @param {object} options.printOptions - Options to pass to the 'magic-print' `getPrinter`. Ignored if `output` is 
+   * @param {object} options.printOptions - Options to pass to the 'magic-print' `getPrinter`. Ignored if `output` is
    *   provided.
    */
   constructor({
@@ -57,7 +57,7 @@ const Questioner = class {
   } = {}) {
     this.#input = input
     if (output === undefined) {
-      const print = getPrinter(printOptions)  
+      const print = getPrinter(printOptions)
       output = { write : print }
     }
     this.#output = output
