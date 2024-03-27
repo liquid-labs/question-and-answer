@@ -1,3 +1,4 @@
+/* global beforeAll beforeEach describe expect jest test */
 import * as readline from 'node:readline'
 
 import {
