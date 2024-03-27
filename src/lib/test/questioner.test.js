@@ -21,11 +21,7 @@ import { Questioner, ANSWERED, CONDITION_SKIPPED, DEFINED_SKIPPED } from '../que
 import { getPrinter, StringOut } from 'magic-print'
 import { conditionalQuestionIB, conditionStatementIB, doubleQuestionIB, simpleIntQuestionIB, statementIB } from './test-data'
 
-jest.setTimeout(750) // tried to set this in 'beforeAll', but it failed; we try and restore value 'afterAll' tests.
-
 describe('Questioner', () => {
-  afterAll(() => jest.setTimeout(5000)) // restore default
-
   describe('QnA flow', () => {
     test('skips questions with a pre-existing parameter value (from previous question)', async () => {
 
