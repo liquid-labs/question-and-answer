@@ -22,14 +22,14 @@ import { getPrinter, StringOut } from 'magic-print'
 import { conditionalQuestionIB, conditionStatementIB, doubleQuestionIB, simpleIntQuestionIB, statementIB } from './test-data'
 
 describe('Questioner', () => {
+  const stringOut = new StringOut()
+  const print = getPrinter({ out: stringOut})
+  const output = { write: print }
+
+  beforeEach(() => { stringOut.reset() })
+
   describe('QnA flow', () => {
     test('skips questions with a pre-existing parameter value (from previous question)', async () => {
-
-
-      const stringOut = new StringOut()
-      const print = getPrinter({ out: stringOut})
-      const output = { write: print }
-
       let readCount = 0
       readline.createInterface.mockImplementation(() => ({
         [Symbol.asyncIterator] : () => ({
