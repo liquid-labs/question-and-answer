@@ -111,10 +111,6 @@ describe('Questioner', () => {
     })
 
     test('Will re-ask questions when answer form invalid', async () => {
-      const stringOut = new StringOut()
-      const print = getPrinter({ out: stringOut})
-      const output = { write: print }
-
       let readCount = 0
       readline.createInterface.mockImplementation(() => ({
         [Symbol.asyncIterator] : () => ({
@@ -154,10 +150,6 @@ describe('Questioner', () => {
       ['0', 0],
       ['-1', -1]
     ])("simple boolean question answer '%s' -> %s", async (answer, expected) => {
-      const stringOut = new StringOut()
-      const print = getPrinter({ out: stringOut})
-      const output = { write: print }
-
       const ib = structuredClone(simpleIB)
       ib.actions[0].paramType = 'int'
 
@@ -206,10 +198,6 @@ describe('Questioner', () => {
       ['false', false],
       ['False', false]
     ])("simple boolean question answer '%s' -> %s", async(answer, expected) => {
-      const stringOut = new StringOut()
-      const print = getPrinter({ out: stringOut})
-      const output = { write: print }
-
       let readCount = 0
       readline.createInterface.mockImplementation(() => ({
         [Symbol.asyncIterator] : () => ({
@@ -237,10 +225,6 @@ describe('Questioner', () => {
 
   describe('Mappings', () => {
     test.each([['yes', 'us'], ['no', 'them']])('value map %s -> %s', async (answer, value) => {
-      const stringOut = new StringOut()
-      const print = getPrinter({ out: stringOut})
-      const output = { write: print }
-
       readline.createInterface.mockImplementation(() => ({
         [Symbol.asyncIterator] : () => ({
           next: async () => { return { value: answer }}
@@ -259,10 +243,6 @@ describe('Questioner', () => {
       ['1', 'IS_FAVE_NOT_ZERO', true],
       ['0', 'IS_FAVE_NOT_ZERO', false]
     ])("source map 'FAVE_INT'=%s, yields '%s'=%s'", async (faveInt, parameter, value) => {
-      const stringOut = new StringOut()
-      const print = getPrinter({ out: stringOut})
-      const output = { write: print }
-
       const questioner = new Questioner({ interrogationBundle : sourceMappingIB, output })
       readline.createInterface.mockImplementation(() => ({
         [Symbol.asyncIterator] : () => ({
@@ -286,10 +266,6 @@ describe('Questioner', () => {
       interrogationBundle.actions[1].maps[0].source = 'ENV_VAR'
       const initialParameters = { ENV_VAR : value }
 
-      const stringOut = new StringOut()
-      const print = getPrinter({ out: stringOut})
-      const output = { write: print }
-
       readline.createInterface.mockImplementation(() => ({
         [Symbol.asyncIterator] : () => ({
           next: async () => { return { value: 'yes' }}
@@ -311,10 +287,6 @@ describe('Questioner', () => {
       ['yes', DO_YOU_LIKE_MILK],
       ['no', IS_THIS_THE_END]
     ])('Conditional question %s -> %s', async (answer, followup) => {
-      const stringOut = new StringOut()
-      const print = getPrinter({ out: stringOut})
-      const output = { write: print }
-
       let readCount = 0
       readline.createInterface.mockImplementation(() => ({
         [Symbol.asyncIterator] : () => ({
@@ -370,10 +342,6 @@ describe('Questioner', () => {
       ['5.5', 'float', 5.5],
       ['6.6', 'numeric', 6.6]
     ])("Value '%s' type '%s' -> %p", async (value, type, expected) => {
-      const stringOut = new StringOut()
-      const print = getPrinter({ out: stringOut})
-      const output = { write: print }
-
       const ib = structuredClone(simpleIB)
       ib.actions[0].paramType = type
 
@@ -408,10 +376,6 @@ describe('Questioner', () => {
       ['Hi Bye', ' ', ['Hi', 'Bye']],
       [' Hi   Bye ', ' ', ['Hi', 'Bye']]
     ])("Answer '%s' sep '%s' -> %p", async (answer, sep, expected) => {
-      const stringOut = new StringOut()
-      const print = getPrinter({ out: stringOut})
-      const output = { write: print }
-
       const ib = structuredClone(simpleIB)
       delete ib.actions[0].paramType
       ib.actions[0].multiValue = true
@@ -442,10 +406,6 @@ describe('Questioner', () => {
       ['1 2', ' ', ['Hi', 'Bye']],
       [' 1   2 ', ' ', ['Hi', 'Bye']]
     ])("Answer '%s' sep '%s' -> %p", async (answer, sep, expected) => {
-      const stringOut = new StringOut()
-      const print = getPrinter({ out: stringOut})
-      const output = { write: print }
-
       const ib = structuredClone(simpleIB)
       delete ib.actions[0].paramType
       ib.actions[0].multiValue = true
@@ -491,10 +451,6 @@ describe('Questioner', () => {
       ['Hi', 'string', 'requireMatch', '[Hi]*'],
       ['Hi', 'string', 'requireMatch', '^[Hi]*$']
     ])("Value '%s' (%s) and requirement %s=%s is accepted", async (value, type, requirement, reqValue) => {
-      const stringOut = new StringOut()
-      const print = getPrinter({ out: stringOut})
-      const output = { write: print }
-
       const ib = structuredClone(simpleIB)
       ib.actions[0].paramType = type
       ib.actions[0][requirement] = reqValue
@@ -533,10 +489,6 @@ describe('Questioner', () => {
       ['Hi', 'string', 'requireMatch', 'Bye', 'Bye'],
       ['Hi', 'string', 'requireMatch', '^[Bye]*$', 'ByeBye']
     ])("Value '%s' (%s) and requirement %s=%s is rejected", async (answer, type, requirement, reqValue, valid) => {
-      const stringOut = new StringOut()
-      const print = getPrinter({ out: stringOut})
-      const output = { write: print }
-
       const ib = structuredClone(simpleIB)
       ib.actions[0].paramType = type
       ib.actions[0][requirement] = reqValue
@@ -575,10 +527,6 @@ describe('Questioner', () => {
       ['Hi,Bye', 'requireMaxCount', 3],
       ['Hi,Bye', 'requireMaxCount', 2]
     ])("Value '%s' (%s) and requirement %s=%s is accepted", async (value, requirement, reqValue) => {
-      const stringOut = new StringOut()
-      const print = getPrinter({ out: stringOut})
-      const output = { write: print }
-
       const ib = structuredClone(simpleIB)
       ib.actions[0].paramType = 'string'
       ib.actions[0].multiValue = true
@@ -605,10 +553,6 @@ describe('Questioner', () => {
       ['Hi,Bye', 'requireMaxCount', 1, 'hi'],
       ['Hi,Bye,Blah', 'requireMaxCount', 2, 'hi,bye']
     ])("Value '%s' (%s) and requirement %s=%s is rejected", async (answer, requirement, reqValue, valid) => {
-      const stringOut = new StringOut()
-      const print = getPrinter({ out: stringOut})
-      const output = { write: print }
-      
       const ib = structuredClone(simpleIB)
       ib.actions[0].multiValue = true
       ib.actions[0].paramType = 'string'
@@ -638,10 +582,6 @@ describe('Questioner', () => {
   })
 
   describe('cookie parameters', () => {
-    const stringOut = new StringOut()
-    const print = getPrinter({ out: stringOut})
-    const output = { write: print }
-
     const questioner = new Questioner({ interrogationBundle : cookieParameterIB, output })
 
     beforeAll(async() => {
@@ -667,10 +607,6 @@ describe('Questioner', () => {
 
   describe('statements', () => {
     test('prints statement', async() => {
-      const stringOut = new StringOut()
-      const print = getPrinter({ out: stringOut})
-      const output = { write: print }
-
       const questioner = new Questioner({ interrogationBundle : statementIB, output })
 
       await questioner.question()
@@ -679,10 +615,6 @@ describe('Questioner', () => {
     })
 
     test('properly skips condition skip statements', async () => {
-      const stringOut = new StringOut()
-      const print = getPrinter({ out: stringOut})
-      const output = { write: print }
-
       const questioner = new Questioner({ interrogationBundle : conditionStatementIB, output })
       await questioner.question()
 
