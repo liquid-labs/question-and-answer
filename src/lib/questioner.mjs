@@ -21,7 +21,6 @@ import { getPrinter } from 'magic-print'
 
 import { Evaluator } from '@liquid-labs/condition-eval'
 
-
 // disposition constants
 const ANSWERED = 'answered'
 const CONDITION_SKIPPED = 'condition-skipped'
@@ -45,7 +44,7 @@ const Questioner = class {
   } = {}) {
     this.#input = input
     const print = getPrinter(printOptions)
-    this.#output = output || { write: print }
+    this.#output = output || { write : print }
     this.#interrogationBundle = structuredClone(interrogationBundle)
     this.#initialParameters = initialParameters
     this.#noSkipDefined = noSkipDefined
