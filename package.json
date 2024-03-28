@@ -33,7 +33,7 @@
   "dependencies": {
     "@liquid-labs/condition-eval": "^1.0.0-alpha.18",
     "cli-columns": "^4.0.0",
-    "magic-print": "file:.yalc/magic-print"
+    "magic-print": "^1.0.0-alpha.7"
   },
   "devDependencies": {
     "@liquid-labs/sdlc-resource-babel-and-rollup": "^1.0.0-alpha.5",
