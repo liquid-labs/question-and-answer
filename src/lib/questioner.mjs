@@ -99,6 +99,7 @@ const Questioner = class {
       }
 
       let prompt = q.prompt
+      let defaultI
       let hint = ''
       if (q.options === undefined) {
         if (defaultValue !== undefined) {
@@ -125,12 +126,14 @@ const Questioner = class {
         const cliOptions = q.options.map((o, i) => (i + 1) + ') ' + o)
         prompt += columns(cliOptions, { width : this.#output.width }) + '\n'
         if (defaultValue !== undefined) {
-          const defaultI = q.options.indexOf(defaultValue)
-          if (defaultI === -1) {
+          // defaultI is 1-indexed
+          defaultI = q.options.indexOf(defaultValue) + 1
+          if (defaultI === 0) {
             delete q.default
           }
           else {
-            prompt += '[' + (defaultI + 1) + '] '
+            defaultI += '' // processing expects a string
+            prompt += '[' + defaultValue + '] '
           }
         }
       }
@@ -145,16 +148,18 @@ const Questioner = class {
       // rl.prompt()
 
       const it = rl[Symbol.asyncIterator]()
-      let answer = (await it.next()).value.trim() || defaultValue || ''
+      let answer = (await it.next()).value.trim() || ''
       if (answer === '-') {
         answer = undefined
         delete q.default
       }
       else if (answer === '') {
-        answer = defaultValue
-      }
-      else {
-        q.default = answer
+        if (defaultI === 0) {
+          answer = undefined
+        }
+        else {
+          answer = defaultI || defaultValue // which will be undefined if no neither defined
+        }
       }
       q.rawAnswer = answer
 
@@ -581,7 +586,6 @@ const verifySingleValueRequirements = ({ op, value }) => {
     catch { // there's only one reason to throw, right?
       throw createError.BadRequest(`Parameter '${parameter}' 'requireMatch' is not a valid regular expression.`)
     }
-
     if (!value.match(regex)) {
       return `Parameter '${parameter}' has value '${value}'; value must match /${requireMatch}/'.`
     }
