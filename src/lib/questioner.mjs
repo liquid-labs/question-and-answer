@@ -122,7 +122,7 @@ const Questioner = class {
         prompt += '\n' + hint
       }
       else {
-        prompt += '\n\n'
+        prompt += '\n'
         const cliOptions = q.options.map((o, i) => (i + 1) + ') ' + o)
         prompt += columns(cliOptions, { width : this.#output.width }) + '\n'
         if (defaultValue !== undefined) {
@@ -208,7 +208,6 @@ const Questioner = class {
         verifyResult = '<warn>' + verifyResult + '<rst>\n'
         this.#output.write(verifyResult)
         rl.close() // we'll create a new one
-        this.#output.write('\n')
         await this.#askQuestion(q)
       }
     } // try for rl
@@ -217,6 +216,7 @@ const Questioner = class {
 
   async #processActions() {
     let first = true
+    let previousAction
     for (const action of this.#interrogationBundle.actions) {
       // check condition skip
       if (action.condition !== undefined && this.#evalTruth(action.condition) === false) {
@@ -249,7 +249,9 @@ const Questioner = class {
         continue
       }
 
-      if (first === false) {
+      // We want to put a newline between items, but if the previous was a question, we already have a newline from the
+      // <return>
+      if (first === false && previousAction.prompt === undefined) {
         this.#output.write('\n')
       }
       if (action.prompt !== undefined) { // it's a question
@@ -259,7 +261,7 @@ const Questioner = class {
         this.#processMapping(action)
       }
       else if (action.statement !== undefined) { // it's a statement
-        this.#output.write(action.statement + '\n')
+        this.#output.write(action.statement)
       }
       else if (action.review !== undefined) { // it's a review
         const [result, included] = await this.#processReview(action)
@@ -280,7 +282,8 @@ const Questioner = class {
         throw createError.BadRequest(`Could not determine action type of ${action}.`)
       }
       first = false
-    }
+      previousAction = action
+    } // for (... this.#interrogationBundle.actions)
   }
 
   #evalNumber(condition) {
@@ -553,7 +556,7 @@ const verifyMultiValueRequirements = ({ op, splitAnswers }) => {
 }
 
 const verifySingleValueRequirements = ({ op, value }) => {
-  const { parameter, requireSomething, requireTruthy, requireExact, requireMatch } = op
+  const { invalidMessage, parameter, requireSomething, requireTruthy, requireExact, requireMatch } = op
   let { requireOneOf } = op
 
   if ((requireSomething === true || requireSomething === 'true') && value === undefined) {
@@ -576,18 +579,18 @@ const verifySingleValueRequirements = ({ op, value }) => {
       return `Parameter '${parameter}' has value '${value}'; value must be one of '${requireOneOf.join("', ")}'.`
     }
   }
-  else if (requireMatch !== undefined) {
+  else if (requireMatch !== undefined && value !== undefined) {
     if (!value.match) {
       throw createError.BadRequest(`Parameter '${parameter}' 'requireMatch' must be applied to a string.`)
     }
 
     let regex
-    try { regex = new RegExp(requireMatch) }
+    try { regex = typeof requireMatch === 'string' ? new RegExp(requireMatch) : requireMatch }
     catch { // there's only one reason to throw, right?
       throw createError.BadRequest(`Parameter '${parameter}' 'requireMatch' is not a valid regular expression.`)
     }
     if (!value.match(regex)) {
-      return `Parameter '${parameter}' has value '${value}'; value must match /${requireMatch}/'.`
+      return invalidMessage || `Parameter '${parameter}' has value '${value}'; value must match:\n${requireMatch}'.`
     }
   }
 
