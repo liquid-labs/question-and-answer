@@ -249,7 +249,7 @@ const Questioner = class {
         continue
       }
 
-      // We want to put a newline between items, but if the previous was a question, we already have a newline from the 
+      // We want to put a newline between items, but if the previous was a question, we already have a newline from the
       // <return>
       if (first === false && previousAction.prompt === undefined) {
         this.#output.write('\n')
