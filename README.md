@@ -1,4 +1,5 @@
 # question-and-answer
+[![coverage: 72%](./.readme-assets/coverage.svg)](https://github.com/liquid-labs/question-and-answer/pulls?q=is%3Apr+is%3Aclosed)
 
 Library providing command-line question and answer functionality.
 
