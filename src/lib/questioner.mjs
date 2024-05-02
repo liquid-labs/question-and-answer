@@ -502,17 +502,18 @@ const transformStringValue = ({ paramType, value }) => {
 
 const verifyAnswerForm = ({ type, value }) => {
   if ((/int(?:eger)?/i).test(type)) {
-    if (isNaN(value) || !value.match(/^-?\d+$/)) {
+    if (isNaN(value + '') || !(value + '').match(/^-?\d+$/)) {
       return `'${value}' is not a valid integer.`
     }
   }
   else if ((/float|numeric/i).test(type)) {
-    if (isNaN(value) || !value.match(/^-?\d+(?:\.\d+)?$/)) {
+    if (isNaN(value + '') || !(value + '').match(/^-?\d+(?:\.\d+)?$/)) {
       return `'${value}' is not a valid ${type}.`
     }
   }
   else if ((/bool(?:ean)?/i).test(type)) {
-    if (!value?.match(/\s*(?:y(?:es)?|n(?:o)?|t(?:rue)?|f(?:alse)?)\s*/i)) {
+    if (typeof value !== 'boolean' &&
+          (typeof value === 'string' && !value?.match(/\s*(?:y(?:es)?|n(?:o)?|t(?:rue)?|f(?:alse)?)\s*/i))) {
       return `'${value}' is not a valid boolean. Try yes|no|true|false`
     }
   }

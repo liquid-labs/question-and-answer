@@ -88,6 +88,27 @@ describe('Questioner', () => {
         })
       })
 
+    test.each([
+      ['bool', false, false],
+      ['int', 100, 100],
+      ['int', -1, -1]
+    ])('initially defined literal values are accepted (%s: %s)',
+      (paramType, input, expected, done) => {
+        const ib = structuredClone(simpleIB)
+        ib.actions[0].paramType = paramType
+        const initialParameters = { IS_CLIENT : input }
+
+        const questioner = new Questioner({ initialParameters, interrogationBundle : ib })
+
+        questioner.question().then(() => {
+          try {
+            expect(questioner.get('IS_CLIENT')).toBe(expected)
+            expect(questioner.getResult('IS_CLIENT').disposition).toBe(DEFINED_SKIPPED)
+          }
+          finally { done() }
+        })
+      })
+
     test("when question is condition-skipped, uses 'elseValue' if present", (done) => {
       const ib = structuredClone(simpleMapIB)
       ib.actions[0].condition = 'FOO'
@@ -347,6 +368,35 @@ describe('Questioner', () => {
       const questioner = new Questioner({ interrogationBundle : ib, output })
 
       await questioner.question()
+
+      expect(questioner.get('IS_CLIENT')).toBe(expected)
+    })
+  })
+
+  describe('Literal default values', () => {
+    test.each([
+      [true, 'boolean', true],
+      [true, 'bool', true],
+      [5, 'integer', 5],
+      [5.5, 'float', 5.5],
+      [6.6, 'numeric', 6.6]
+    ])("Default '%s' type '%s' -> %p", async(defaultValue, type, expected) => {
+      const ib = structuredClone(simpleIB)
+      ib.actions[0].paramType = type
+      ib.actions[0].default = defaultValue
+
+      readline.createInterface.mockImplementation(() => ({
+        [Symbol.asyncIterator] : () => ({
+          next : async() => { return { value: '' } }
+        }),
+        close : () => undefined
+      }))
+
+      const questioner = new Questioner({ interrogationBundle : ib, output })
+
+      await questioner.question()
+
+      expect(questioner.get('IS_CLIENT')).toBe(expected)
     })
   })
 
