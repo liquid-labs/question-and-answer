@@ -387,7 +387,7 @@ describe('Questioner', () => {
 
       readline.createInterface.mockImplementation(() => ({
         [Symbol.asyncIterator] : () => ({
-          next : async() => { return { value: '' } }
+          next : async() => { return { value : '' } }
         }),
         close : () => undefined
       }))

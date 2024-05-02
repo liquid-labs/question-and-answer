@@ -512,8 +512,8 @@ const verifyAnswerForm = ({ type, value }) => {
     }
   }
   else if ((/bool(?:ean)?/i).test(type)) {
-    if (typeof value !== 'boolean' &&
-          (typeof value === 'string' && !value?.match(/\s*(?:y(?:es)?|n(?:o)?|t(?:rue)?|f(?:alse)?)\s*/i))) {
+    if (typeof value !== 'boolean'
+          && (typeof value === 'string' && !value?.match(/\s*(?:y(?:es)?|n(?:o)?|t(?:rue)?|f(?:alse)?)\s*/i))) {
       return `'${value}' is not a valid boolean. Try yes|no|true|false`
     }
   }
