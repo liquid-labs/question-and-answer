@@ -143,7 +143,7 @@ const Questioner = class {
         prompt += `\nEnter one or more ${sepDesc} separated ${q.options ? 'selections' : 'values'}.\n`
       }
 
-      this.#output.write('\n' + prompt)
+      this.#write({ options: q.outputOptions, text: '\n' + prompt })
       // rl.setPrompt(formatTerminalText(prompt))
       // rl.prompt()
 
@@ -206,7 +206,7 @@ const Questioner = class {
       }
       else { // the 'answer form' is invalid; let's try again
         verifyResult = '<warn>' + verifyResult + '<rst>\n'
-        this.#output.write(verifyResult)
+        this.#write({ options: q.outputOptions, text: verifyResult })
         rl.close() // we'll create a new one
         await this.#askQuestion(q)
       }
@@ -261,7 +261,7 @@ const Questioner = class {
         this.#processMapping(action)
       }
       else if (action.statement !== undefined) { // it's a statement
-        this.#output.write(action.statement)
+        this.#write({ options: action.outputOptions, text: action.statement })
       }
       else if (action.review !== undefined) { // it's a review
         const [result, included] = await this.#processReview(action)
@@ -477,6 +477,15 @@ const Questioner = class {
         }
       }
     })
+  }
+
+  #write({ options, text }) {
+    if (options === undefined) {
+      this.#output.write(text)
+    }
+    else {
+      this.#output.writeWithOptions(options, text)
+    }
   }
 }
 
