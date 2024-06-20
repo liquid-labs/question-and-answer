@@ -24,9 +24,11 @@ const interrogationBundle = {
     { 
       "prompt": "What are your 2 or 3 favorite colors?",
       "multiValue": true,
-      "requireMinCount": 2,
-      "requireMaxCount": 3,
-      "parameter": "FAVORITE_COLOR"
+      "parameter": "FAVORITE_COLOR",
+      "validations": {
+        "min-count": 2,
+        "max-count": 3
+      }
     },
     {
       "prompt": "What's your favorite integer number?",
@@ -70,7 +72,7 @@ The CLI is intended mainly a way to test/demonstraite interrogation bundles.
 - The bundle defines an array of _actions_.
 - Each _action_ is either a _question_, _map_, _statement_, or _review_.
 - A _question_ asks the user a question and sets a parameter based on the answer.
-- A _map_ maps existing parameters to a new parameter bassed on a [condition-eval](https://github.com/liquid-labs/condition-eval) string.
+- A _map_ maps existing parameters to a new parameter based on a [condition-eval](https://github.com/liquid-labs/condition-eval) string.
 - A _statement_ displays text to the user.
 - A review initiates a review of previously set questions not already reviewed.[*](#review-note)
 - Each _action_ has exactly one of the following fields, which defines its type:
@@ -89,17 +91,11 @@ The CLI is intended mainly a way to test/demonstraite interrogation bundles.
   - an optional "options" array of strings,
   - an optional "multiValue" boolean,
   - an optional "elseSource"; the value is a parameter name whose value is used to set the "parameter" if the "condition" fails
-  - optional _requirement_ fields:
-    - "requireSomething" dissalows empty responses,
-    - "requireTruthy" requires a true boolean, non-empty string, or non-zero integer, 
-    - "requireExact" requires an exact match
-    - "requireMatch" defines a regular expression which must match the answer (only applicable to strings), 
-    - "requireOneOf" defines a comma separated list of values, one of which musts match the answer,
-    - "requireMinCount" defines a minimum number of answers for a multi-value question, and
-    - "requireMaxCount" defines a maximum number of answers for a multi-value question.
+  - optional _validations_ object; see the [validations](#validations) section
 - each _map_ entry defines one of:
   - an optional "source" a [condition-eval](https://github.com/liquid-labs/condition-eval) statement, or
   - an optional "value" a literal value
+  - optional _validations_ object; see the [validations](#validations) section
 - a _review_ may have a value of "questions", "maps", or "all"
 
 ### Interrogation flow
@@ -122,15 +118,19 @@ The CLI is intended mainly a way to test/demonstraite interrogation bundles.
    1. If there is a default value, it is displayed in the prompt and will be used if the user just hits &lt;ENTER&gt; with no other input.
    2. If there are any _requirements_, they are evaluated against the answer and teh question is re-asked until the _requirements_ are met.
 
-"Performing a review" means:
+"Performing a _review_" means:
 1. Determine the values to review.
    1. Any previously reviewed value is excluded.[*](#review-note)
    2. A 'questions' review reviews only _question_ values whereas an 'all' reviews _qusetion_ and _map_ values.
 2. Display the values, in order, with the option to accept (hit &lt;ENTER&gt;) or change the value.
 
-To changeg a default value to literal nothing (empty string, null value), enter '-'. This "clears" the current value.
+To change a default value to literal nothing (empty string, null value), enter '-'. This "clears" the current value.
 
 <span id="review-note">*Review note:</span> the review does not currently skip previously reviewed items as it should. This is a [known issue](https://github.com/liquid-labs/question-and-answer/issues/75).
+
+### Validations
+
+You can require a specific number of answers for multi-value answers, and perform arbitrary validation checks on the string values. Validations are performed using the [specify-string](https://github.com/liquid-labs/specify-string) library. Please refer to the project documentation for complete details on validations. The `validations` object is passed into the `validateString` function as the validation `spec`. If provided, the optional `validators` parameter passed in the `Questioner` constructor is passed to `validateString`.
 
 ### Examples
 

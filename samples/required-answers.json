@@ -1,6 +1,16 @@
 {
   "actions": [
-    { "prompt": "How many moons does the earth have?", "paramType": "int", "parameter": "EXACT_INT", "requireExact": 1 },
-    { "prompt": "Are you sure?", "parameter": "CONFIRM", "parameType": "bool", "requireTruthy": true }
+    { 
+      "prompt": "How many moons does the earth have?", 
+      "paramType": "int", 
+      "parameter": "EXACT_INT",
+      "validations": { "require-exact": 1 }
+    },
+    { 
+      "prompt": "Are you sure?", 
+      "parameter": "CONFIRM", 
+      "parameType": "bool",
+      "validations": { "require-truthy": true }
+    }
   ]
 }
