@@ -402,7 +402,7 @@ const Questioner = class {
 
     const header = `<h2>Review ${included.length} ${reviewType === 'all' ? 'values' : 'answers'}:<rst>`
 
-    this.#write({ options: { hangingIndent : 2 }, text: header + '\n' + reviewText })
+    this.#write({ options : { hangingIndent : 2 }, text : header + '\n' + reviewText })
 
     while (true) {
       const rl = readline.createInterface({ input : this.#input, output : this.#output, terminal : false })
