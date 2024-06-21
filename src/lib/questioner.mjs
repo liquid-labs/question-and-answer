@@ -18,6 +18,7 @@ import * as readline from 'node:readline'
 import columns from 'cli-columns'
 import createError from 'http-errors'
 import { getPrinter } from 'magic-print'
+import { validateString, validateStringSpec } from 'specify-string'
 
 import { Evaluator } from '@liquid-labs/condition-eval'
 
@@ -33,6 +34,7 @@ const Questioner = class {
   #interrogationBundle = []
   #noSkipDefined
   #results = []
+  #validators
 
   /**
    * Creates a `Questioner`.
@@ -53,7 +55,8 @@ const Questioner = class {
     initialParameters = {},
     noSkipDefined = false,
     output,
-    printOptions
+    printOptions,
+    validators
   } = {}) {
     this.#input = input
     if (output === undefined) {
@@ -64,6 +67,7 @@ const Questioner = class {
     this.#interrogationBundle = structuredClone(interrogationBundle)
     this.#initialParameters = initialParameters
     this.#noSkipDefined = noSkipDefined
+    this.#validators = validators
 
     this.#verifyInterrogationBundle()
 
@@ -168,9 +172,10 @@ const Questioner = class {
       const splitAnswers = q.multiValue === true ? answer.split(new RegExp(`\\s*${separator}\\s*`)) : [answer]
 
       let verifyResult = true
-      if (q.multiValue === true) {
-        verifyResult = verifyMultiValueRequirements({ op : q, splitAnswers })
+      if (q.validations !== undefined) {
+        verifyResult = validateString({ spec : q.validations, validators : this.#validators, value : splitAnswers })
       }
+
       const values = []
       if (verifyResult === true) {
         for (const aValue of splitAnswers) {
@@ -179,7 +184,6 @@ const Questioner = class {
             verifyResult = verifyAnswerForm({ type, value : aValue })
             if (verifyResult === true) {
               const value = transformStringValue({ paramType : type, value : aValue })
-              verifyResult = verifySingleValueRequirements({ op : q, value })
               values.push(value)
             }
           }
@@ -189,7 +193,7 @@ const Questioner = class {
               verifyResult = `Please enter a number between 1 and ${q.options.length}.`
             }
             else {
-              verifyResult = true
+              // verifyResult = true // TODO: why wa this here, seems redundant, but will leave until we can verify everything works
               const value = q.options[selectionI - 1]
               values.push(value)
             }
@@ -204,7 +208,7 @@ const Questioner = class {
         const value = q.multiValue === true ? values : values[0]
         this.#addResult({ source : q, value })
       }
-      else { // the 'answer form' is invalid; let's try again
+      else { // something about the answer is invalid; let's try again
         verifyResult = '<warn>' + verifyResult + '<rst>\n'
         this.#write({ options : q.outputOptions, text : verifyResult })
         rl.close() // we'll create a new one
@@ -340,12 +344,12 @@ const Questioner = class {
             value = transformStringValue({ paramType : map.paramType, value })
           }
 
-          verifyMappingValue({ map, value })
+          verifyMappingValue({ map, validators : this.#validators, value })
           this.#addResult({ source : map, value })
         }
         else if (map.value !== undefined) {
           const value = transformStringValue(map)
-          verifyMappingValue({ map, value })
+          verifyMappingValue({ map, validators : this.#validators, value })
           this.#addResult({ source : map, value })
         }
         else { // this should already be verified up front, but for the sake of comopletness
@@ -398,7 +402,7 @@ const Questioner = class {
 
     const header = `<h2>Review ${included.length} ${reviewType === 'all' ? 'values' : 'answers'}:<rst>`
 
-    this.#output.write(header + '\n' + reviewText, { hangingIndent : 2 })
+    this.#write({ options : { hangingIndent : 2 }, text : header + '\n' + reviewText })
 
     while (true) {
       const rl = readline.createInterface({ input : this.#input, output : this.#output, terminal : false })
@@ -437,12 +441,16 @@ const Questioner = class {
 
   #verifyInterrogationBundle() {
     const verifyMapping = ({ maps }) => {
-      for (const { parameter, source, value } of maps) {
+      for (const { parameter, source, validations, value } of maps) {
         if (parameter === undefined) {
           throw createError.BadRequest("One of the mappings lacks a 'parameter' parameter.")
         }
         if (source === undefined && value === undefined) {
           throw createError.BadRequest(`Mapping for '${parameter}' must specify one of 'source' or 'value'.`)
+        }
+        if (validations !== undefined) {
+          // raises an exception if there's a problem
+          validateStringSpec({ spec : validations, validators : this.#validators })
         }
       }
     }
@@ -460,9 +468,6 @@ const Questioner = class {
         // TODO: replace with some kind of JSON schema verification
         if (action.parameter === undefined) {
           throw createError.BadRequest(`Question ${i + 1} does not define a 'parameter'.`)
-        }
-        if (action.prompt === undefined) {
-          throw createError.BadRequest(`Question ${i + 1} does not define a 'prompt'.`)
         }
         if (action.paramType !== undefined && !action.paramType.match(/bool(?:ean)?|int(?:eger)?|float|numeric|string/)) {
           throw createError.BadRequest(`Found unknown parameter type '${action.paramType}' in interrogation bundle question ${i + 1}.`)
@@ -484,7 +489,7 @@ const Questioner = class {
       this.#output.write(text)
     }
     else {
-      this.#output.writeWithOptions(options, text)
+      this.#output.write.withOptions(options)(text)
     }
   }
 }
@@ -533,78 +538,17 @@ const verifyAnswerForm = ({ type, value }) => {
   return true // we've passed the gauntlet
 }
 
-const verifyMappingValue = ({ map, value }) => {
-  if (verifySingleValueRequirements({ op : map, value }) !== true) {
-    let msg
-    if (map.description) {
-      msg = `${map.description} ${value} (mapping error)`
-    }
-    else {
-      msg = `Mapping requirement failed for parameter ${map.parameter}`
-    }
+const verifyMappingValue = ({ map, validators, value }) => {
+  const { validations } = map
+  if (validations === undefined) {
+    return
+  }
+
+  const mapCheck = validateString({ spec : validations, validators, value })
+  if (mapCheck !== true) {
+    const msg = `Mapping requirement failed for parameter ${map.parameter}. ${mapCheck}`
     throw createError.BadRequest(msg)
   }
-}
-
-const verifyMultiValueRequirements = ({ op, splitAnswers }) => {
-  const { requireMaxCount, requireMinCount } = op
-
-  if (requireMaxCount !== undefined) {
-    const maxCount = typeof requireMaxCount === 'string' ? parseInt(requireMaxCount) : requireMaxCount
-    if (splitAnswers.length > maxCount) {
-      return `You must provide no more than ${maxCount} values.`
-    }
-  }
-  if (requireMinCount !== undefined) {
-    const minCount = typeof requireMinCount === 'string' ? parseInt(requireMinCount) : requireMinCount
-    if (splitAnswers.length < minCount) {
-      return `You must provide at least ${minCount} values.`
-    }
-  }
-
-  return true
-}
-
-const verifySingleValueRequirements = ({ op, value }) => {
-  const { invalidMessage, parameter, requireSomething, requireTruthy, requireExact, requireMatch } = op
-  let { requireOneOf } = op
-
-  if ((requireSomething === true || requireSomething === 'true') && value === undefined) {
-    return `Parameter '${parameter}' must have a defined value.`
-  }
-  else if ((requireTruthy === true || requireTruthy === 'true') && !value) {
-    return `Parameter '${parameter}' has value '${value}'; must have a "truth-y" value.`
-  }
-  else if (requireExact !== undefined && (requireExact + '') !== (value + '')) {
-    return `Parameter '${parameter}' has value '${value}'; value must be '${requireExact}'.`
-  }
-  else if (requireOneOf !== undefined) {
-    if ((typeof requireOneOf) === 'string') {
-      requireOneOf = requireOneOf.split(/\s*,\s*/)
-    }
-    if (!Array.isArray(requireOneOf)) {
-      throw createError.BadRequest(`Parameter '${parameter}' 'requireOneOf' is malformed; must be an array of values.`)
-    }
-    if (!requireOneOf.includes(value)) {
-      return `Parameter '${parameter}' has value '${value}'; value must be one of '${requireOneOf.join("', ")}'.`
-    }
-  }
-  else if (requireMatch !== undefined && value !== undefined) {
-    if (!value.match) {
-      throw createError.BadRequest(`Parameter '${parameter}' 'requireMatch' must be applied to a string.`)
-    }
-
-    let regex
-    try { regex = typeof requireMatch === 'string' ? new RegExp(requireMatch) : requireMatch }
-    catch { // there's only one reason to throw, right?
-      throw createError.BadRequest(`Parameter '${parameter}' 'requireMatch' is not a valid regular expression.`)
-    }
-    if (!value.match(regex)) {
-      return invalidMessage || `Parameter '${parameter}' has value '${value}'; value must match:\n${requireMatch}'.`
-    }
-  }
-
-  return true
 }
 
 export { Questioner, ANSWERED, CONDITION_SKIPPED, DEFINED_SKIPPED }
