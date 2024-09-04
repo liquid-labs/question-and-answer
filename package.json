@@ -34,13 +34,13 @@
     "@liquid-labs/condition-eval": "^1.0.0-alpha.18",
     "cli-columns": "^4.0.0",
     "magic-print": "^1.0.0-alpha.18",
-    "specify-string": "^1.0.3"
+    "standard-error-set": "^1.0.0-alpha.9",
+    "string-input": "^1.0.0-alpha.10"
   },
   "devDependencies": {
-    "@liquid-labs/sdlc-resource-babel-and-rollup": "^1.0.0-alpha.5",
-    "@liquid-labs/sdlc-resource-eslint": "^1.0.0-alpha.2",
-    "@liquid-labs/sdlc-resource-jest": "^1.0.0-alpha.5",
-    "http-errors": "^2.0.0"
+    "@liquid-labs/sdlc-resource-babel-and-rollup": "^1.0.0-alpha.9",
+    "@liquid-labs/sdlc-resource-eslint": "^1.0.0-alpha.20",
+    "@liquid-labs/sdlc-resource-jest": "^1.0.0-alpha.5"
   },
   "_npm-check-plus": {
     "depcheck": {

@@ -32,7 +32,7 @@ const interrogationBundle = {
     },
     {
       "prompt": "What's your favorite integer number?",
-      "paramType": "integer",
+      "type": "integer",
       "parameter": "FAVORITE_NUMBER"
     },
     { 
@@ -42,8 +42,8 @@ const interrogationBundle = {
     },
     {
       "maps": [
-        { "source": "FAVORITE_NUMBER > 99", "parameter": "GT100", "paramType": "boolean" },
-        { "source": "FAVORITE_NUMBER * 2", "parameter": "TWOX", "paramType": "integer" }
+        { "source": "FAVORITE_NUMBER > 99", "parameter": "GT100", "type": "boolean" },
+        { "source": "FAVORITE_NUMBER * 2", "parameter": "TWOX", "type": "integer" }
       ]
     },
     { "review": "questions" }
@@ -72,7 +72,8 @@ The CLI is intended mainly a way to test/demonstraite interrogation bundles.
 - The bundle defines an array of _actions_.
 - Each _action_ is either a _question_, _map_, _statement_, or _review_.
 - A _question_ asks the user a question and sets a parameter based on the answer.
-- A _map_ maps existing parameters to a new parameter based on a [condition-eval](https://github.com/liquid-labs/condition-eval) string.
+- A _map_ maps existing parameters to a new parameter based on a [condition-eval](https://github.com/liquid-labs/condition-eval) string or literal value.
+  - A non-literal mapping must specify either a 'boolean', 'integer', or 'numeric' type.
 - A _statement_ displays text to the user.
 - A review initiates a review of previously set questions not already reviewed.[*](#review-note)
 - Each _action_ has exactly one of the following fields, which defines its type:
@@ -83,7 +84,7 @@ The CLI is intended mainly a way to test/demonstraite interrogation bundles.
 - Any _action_ may define an optional "condition" string, evaluated accordig to [condition-eval](https://github.com/liquid-labs/condition-eval)
 - Each parameter setting _action_ (_question_ or _map_) defines:
   - exactly one "parameter" string,
-  - an optional "paramType" string of "bool", "boolean", "int", "intefer", "float", "numeric", or "string" (default)
+  - an optional "type" string of "bool", "boolean", "int", "intefer", "float", "numeric", or "string" (default)
   - an optional "noSkipDefined" parameter which, if true, will execute the _action_ even if the named "parameter" is defined
 - Each _question_ defines:
   - exactly one "prompt" string,
