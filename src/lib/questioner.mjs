@@ -17,7 +17,7 @@ import columns from 'cli-columns'
 import createError from 'http-errors'
 import { getPrinter } from 'magic-print'
 import { ArgumentInvalidError, rethrowIf } from 'standard-error-set'
-import { BooleanString, Integer, Numeric, ValidatedString } from 'string-input'
+import { BooleanString, Integer, Numeric } from 'string-input'
 
 import { Evaluator } from '@liquid-labs/condition-eval'
 
@@ -39,16 +39,16 @@ const Questioner = class {
 
   /**
    * Creates a `Questioner`.
-   *
-   * @param {object} options.input - The object passed to `readline` as input. Default to `process.stdin`.
+   * @param {object} options - Constructor options.
+   * @param {object} [options.input = process.stdin] - The object passed to `readline` as input.
    * @param {object} options.interrogationBundle - The interrogation spec.
-   * @param {object} options.initialParameters - Key/value object defining initial parameter values.
-   * @param {boolean} options.noSkipDefined - By default, questions related to defined parameters are skipped. If this
-   *   option is true, then defined questions are asked.
-   * @param {object} options.output - The output object to use. Must define `write`. If not defined, then 'magic-print'
-   *   is is used.
-   * @param {object} options.printOptions - Options to pass to the 'magic-print' `getPrinter`. Ignored if `output` is
-   *   provided.
+   * @param {object} [options.initialParameters = {}] - Key/value object defining initial parameter values.
+   * @param {boolean} [options.noSkipDefined = false] - By default, questions related to defined parameters are 
+   *   skipped. If this option is true, then defined questions are asked.
+   * @param {object} [options.output = magic-print] - Object providing `write` function for output. If not defined, 
+   *   then [magic-print](https://github.com/liquid-labs/magic-print) is is used.
+   * @param {object} [options.printOptions = undefined] - Options to pass to the 'magic-print' `getPrinter`. Ignored if 
+   *   `output` is provided.
    */
   constructor({
     input = process.stdin,
@@ -56,8 +56,8 @@ const Questioner = class {
     initialParameters = {},
     noSkipDefined = false,
     output,
-    printOptions
-  } = {}) {
+    printOptions,
+  }) {
     this.#input = input
     if (output === undefined) {
       const print = getPrinter(printOptions)
@@ -80,7 +80,6 @@ const Questioner = class {
   #addResult({ source, value }) {
     // We want 'value' last because the 'value' attached to the source is always a string, while the final value will
     // have been converted by type.
-    
 
     const result = Object.assign(ibClone(source), { value })
     // Let's tidy up the results with some info that is more of internal use and less relevant for reporting.
@@ -96,7 +95,11 @@ const Questioner = class {
   async #askQuestion(q) {
     // to avoid the 'MaxListenersExceededWarning', we have to create the rl inside the loop because everytime we do
     // our loop it ends up adding listeners for whatever reason.
-    const rl = readline.createInterface({ input : this.#input, output : this.#output, terminal : false }) // TODO: why is terminal false?
+    const rl = readline.createInterface({
+      input    : this.#input,
+      output   : this.#output,
+      terminal : false,
+    }) // TODO: why is terminal false?
 
     try {
       const type = translateType(q.type)
@@ -107,7 +110,8 @@ const Questioner = class {
       let defaultI
       let hint = ''
       if (q.options === undefined) {
-        if (prompt.match(/\[[^]+\] *$/m)) { // do we already have a hint?
+        if (prompt.match(/\[[^]+\] *$/m)) {
+          // do we already have a hint?
           hint = prompt.replace(/.+(\[[^]+\]) *$/, '$1') + ' '
           prompt = prompt.replace(/(.+?)\s*\[[^]+\] *$/, '$1') // we're going to add the hint back in a bit
         }
@@ -126,9 +130,10 @@ const Questioner = class {
         // the '\n' puts the input cursor below the prompt for consistency
         prompt += '\n' + hint
       }
-      else { // the question has defined options
+      else {
+        // the question has defined options
         prompt += '\n'
-        const cliOptions = q.options.map((o, i) => (i + 1) + ') ' + o)
+        const cliOptions = q.options.map((o, i) => i + 1 + ') ' + o)
         prompt += columns(cliOptions, { width : this.#output.width }) + '\n'
         if (defaultValue !== undefined) {
           // defaultI is 1-indexed
@@ -163,7 +168,7 @@ const Questioner = class {
           answer = undefined
         }
         else {
-          // we change the default to a string so that we can still process the constraints using the 'string-input' 
+          // we change the default to a string so that we can still process the constraints using the 'string-input'
           // style type functions which expect a string input.
           answer = (defaultI || defaultValue || '').toString()
         }
@@ -171,8 +176,15 @@ const Questioner = class {
       q.rawAnswer = answer.toString()
 
       // if the user defines a separator, it may contain RE special characters we need to escape
-      const separator = q.separator?.replaceAll(/(\.|\+|\*|\?|\^|\$|\||\(|\)|\{|\}|\[|\]|\\)/g, '\\$1') || ','
-      const splitAnswers = q.multiValue === true ? answer.split(new RegExp(`\\s*${separator}\\s*`)) : [answer]
+      const separator =
+        q.separator?.replaceAll(
+          /(\.|\+|\*|\?|\^|\$|\||\(|\)|\{|\}|\[|\]|\\)/g,
+          '\\$1'
+        ) || ','
+      const splitAnswers =
+        q.multiValue === true
+          ? answer.split(new RegExp(`\\s*${separator}\\s*`))
+          : [answer]
 
       const reAskQuestion = async (issue) => {
         const message = `<warn>${issue}<rst>\n`
@@ -181,24 +193,31 @@ const Questioner = class {
         await this.#askQuestion(q)
       }
 
-      let verifyResult = true
       const values = []
       for (const anAnswer of splitAnswers) {
         if (q.options === undefined) {
-          let [value, issue] = verifyAnswerForm({ ...q, type, input: anAnswer })
+          const [value, issue] = verifyAnswerForm({ ...q, type, input : anAnswer })
           if (issue === undefined) {
             values.push(value)
           }
           else {
             await reAskQuestion(issue)
           }
-        } else { // it's an options question
+        }
+        else {
+          // it's an options question
           try {
-            const selectionI = Integer(anAnswer, { max: q.options.length, min: 1 })
+            const selectionI = Integer(anAnswer, {
+              max : q.options.length,
+              min : 1,
+            })
             const value = q.options[selectionI - 1]
             values.push(value)
-          } catch (e) {
-            await reAskQuestion(`Please enter a number between 1 and ${q.options.length}.`)
+          }
+          catch (e) {
+            await reAskQuestion(
+              `Please enter a number between 1 and ${q.options.length}.`
+            )
           }
         }
       }
@@ -207,8 +226,11 @@ const Questioner = class {
       q.disposition = ANSWERED
       const value = q.multiValue === true ? values : values[0]
       this.#addResult({ source : q, value })
-    } // try for rl
-    finally { rl.close() }
+    }
+    finally {
+      // try for rl
+      rl.close()
+    }
   }
 
   async #processActions() {
@@ -216,22 +238,31 @@ const Questioner = class {
     let previousAction
     for (const action of this.#interrogationBundle.actions) {
       // check condition skip
-      if (action.condition !== undefined && this.#evalTruth(action.condition) === false) {
+      if (
+        action.condition !== undefined
+        && this.#evalTruth(action.condition) === false
+      ) {
         action.disposition = CONDITION_SKIPPED
         const type = translateType(action.type)
         if (action.elseValue !== undefined) {
           const { elseValue } = action
-          const value = typeof elseValue === 'string' 
-            ? verifyAnswerForm({ ...action, input : elseValue, type }) 
-            : elseValue
-          this.#addResult({ source : action, value : action.elseValue })
+          const value =
+            typeof elseValue === 'string'
+              ? verifyAnswerForm({ ...action, input : elseValue, type })
+              : elseValue
+          this.#addResult({ source : action, value })
         }
         else if (action.elseSource !== undefined) {
           const type = translateType(action.type)
-          const evalResult = type === BooleanString
-            ? this.#evalTruth(action.elseSource)
-            : this.#evalNumber(action.elseSource)
-          const [value] = verifyAnswerForm({ ...action, input: evalResult.toString(), type })
+          const evalResult =
+            type === BooleanString
+              ? this.#evalTruth(action.elseSource)
+              : this.#evalNumber(action.elseSource)
+          const [value] = verifyAnswerForm({
+            ...action,
+            input : evalResult.toString(),
+            type,
+          })
           this.#addResult({ source : action, value })
         }
         else {
@@ -242,11 +273,14 @@ const Questioner = class {
 
       const definedSkip =
         // v global no skip               v question-scoped no skip  v otherwise, skip if we has it
-        (this.#noSkipDefined !== true && action.noSkipDefined !== true && this.has(action.parameter) === true)
+        this.#noSkipDefined !== true
+        && action.noSkipDefined !== true
+        && this.has(action.parameter) === true
 
-      if (definedSkip === true) { // is already defined?
+      if (definedSkip === true) {
+        // is already defined?
         action.disposition = DEFINED_SKIPPED
-        // this is necessary because maybe we're getting the definition as part of the parameter inputs, which could 
+        // this is necessary because maybe we're getting the definition as part of the parameter inputs, which could
         // just be a string
         const type = translateType(action.type)
         const input = this.get(action.parameter).toString()
@@ -257,21 +291,25 @@ const Questioner = class {
         this.#addResult({ source : action, value })
       }
       else {
-        // We want to put a newline between items, but if the previous was a question, we already have a newline from 
+        // We want to put a newline between items, but if the previous was a question, we already have a newline from
         // the <return>
         if (first === false && previousAction.prompt === undefined) {
           this.#output.write('\n')
         }
-        if (action.prompt !== undefined) { // it's a question
+        if (action.prompt !== undefined) {
+          // it's a question
           await this.#askQuestion(action)
         }
-        else if (action.maps !== undefined) { // it's a mapping
+        else if (action.maps !== undefined) {
+          // it's a mapping
           this.#processMapping(action)
         }
-        else if (action.statement !== undefined) { // it's a statement
+        else if (action.statement !== undefined) {
+          // it's a statement
           this.#write({ options : action.outputOptions, text : action.statement })
         }
-        else if (action.review !== undefined) { // it's a review
+        else if (action.review !== undefined) {
+          // it's a review
           const [result, included] = await this.#processReview(action)
           if (result === true && action.parameter !== undefined) {
             this.#addResult({ source : action, value : result })
@@ -279,6 +317,7 @@ const Questioner = class {
           else if (result === false) {
             const toNix = included.reduce((acc, i) => {
               acc[i.parameter] = true
+
               return acc
             }, {})
             this.#results = this.#results.filter((r) => !(r.parameter in toNix))
@@ -287,7 +326,9 @@ const Questioner = class {
           }
         }
         else {
-          throw createError.BadRequest(`Could not determine action type of ${action}.`)
+          throw createError.BadRequest(
+            `Could not determine action type of ${action}.`
+          )
         }
       } // else not defined skip
       first = false
@@ -297,11 +338,13 @@ const Questioner = class {
 
   #evalNumber(condition) {
     const evaluator = new Evaluator({ parameters : this.#evalParams() })
+
     return evaluator.evalNumber(condition)
   }
 
   #evalTruth(condition) {
     const evaluator = new Evaluator({ parameters : this.#evalParams() })
+
     return evaluator.evalTruth(condition)
   }
 
@@ -311,9 +354,11 @@ const Questioner = class {
 
   get(parameter) {
     const val = this.getResult(parameter)?.value
-    if (val === undefined) { // val may be 'false', which is fine
+    if (val === undefined) {
+      // val may be 'false', which is fine
       return this.#initialParameters[parameter]
     }
+
     return val
   }
 
@@ -326,10 +371,14 @@ const Questioner = class {
   }
 
   has(parameter) {
-    return this.get(parameter) !== undefined || (parameter in this.#initialParameters)
+    return (
+      this.get(parameter) !== undefined || parameter in this.#initialParameters
+    )
   }
 
-  get interrogationBundle() { return this.#interrogationBundle }
+  get interrogationBundle() {
+    return this.#interrogationBundle
+  }
 
   #processMapping(mapping) {
     if (mapping.condition === undefined || this.#evalTruth(mapping.condition)) {
@@ -342,12 +391,15 @@ const Questioner = class {
 
           // recall maps only support boolean and numeric types
           if (![BooleanString, Integer, Numeric].includes(type)) {
-            throw createError.BadRequest(`Cannot map a 'source' value to parameter '${map.parameter}' of type '${map.type || 'string'}'. Type must be 'boolean', 'integer', or 'numeric'.`)
+            throw createError.BadRequest(
+              `Cannot map a 'source' value to parameter '${map.parameter}' of type '${map.type || 'string'}'. Type must be 'boolean', 'integer', or 'numeric'.`
+            )
           }
           else if (map.type === BooleanString) {
             value = this.#evalTruth(map.source)
           }
-          else { // it's numeric
+          else {
+            // it's numeric
             value = this.#evalNumber(map.source)
           }
 
@@ -355,17 +407,24 @@ const Questioner = class {
           this.#addResult({ source : map, value })
         }
         else if (map.value !== undefined) {
-          const [value, issue] = verifyAnswerForm({ input: map.value.toString(), ...map, type })
+          const [value, issue] = verifyAnswerForm({
+            input : map.value.toString(),
+            ...map,
+            type,
+          })
           if (issue !== undefined) {
             throw new ArgumentInvalidError({
-              message: `Mapping to parameter '${map.parameter}' ${issue}.`,
-              status: 500,
+              message : `Mapping to parameter '${map.parameter}' ${issue}.`,
+              status  : 500,
             })
           }
           this.#addResult({ source : map, value })
         }
-        else { // this should already be verified up front, but for the sake of comopletness
-          throw new Error(`Mapping for '${map.parameter}' must specify either 'source' or 'value'.`)
+        else {
+          // this should already be verified up front, but for the sake of comopletness
+          throw new Error(
+            `Mapping for '${map.parameter}' must specify either 'source' or 'value'.`
+          )
         }
       })
     }
@@ -383,7 +442,8 @@ const Questioner = class {
         continue
       }
       const result = this.#getResultByIndex(action._index)
-      const include = action.statement === undefined
+      const include =
+        action.statement === undefined
         && (reviewType === 'all' || action.prompt !== undefined)
         && !result?.disposition.endsWith('skipped')
 
@@ -414,16 +474,26 @@ const Questioner = class {
 
     const header = `<h2>Review ${included.length} ${reviewType === 'all' ? 'values' : 'answers'}:<rst>`
 
-    this.#write({ options : { hangingIndent : 2 }, text : header + '\n' + reviewText })
+    this.#write({
+      options : { hangingIndent : 2 },
+      text    : header + '\n' + reviewText,
+    })
 
     while (true) {
-      const rl = readline.createInterface({ input : this.#input, output : this.#output, terminal : false })
+      const rl = readline.createInterface({
+        input    : this.#input,
+        output   : this.#output,
+        terminal : false,
+      })
       try {
         this.#output.write('\n<bold>Verified?<rst> [y/n] ')
 
         const it = rl[Symbol.asyncIterator]()
         const answer = (await it.next()).value.trim()
-        const [value,issue] = verifyAnswerForm({ type : BooleanString, input : answer })
+        const [value, issue] = verifyAnswerForm({
+          type  : BooleanString,
+          input : answer,
+        })
         if (issue === undefined) {
           return [value, included]
         }
@@ -431,32 +501,46 @@ const Questioner = class {
           this.#output.write(`<warn>${issue}<rst>` + '\n')
         }
       }
-      finally { rl.close() }
+      finally {
+        rl.close()
+      }
     }
   }
 
   async question() {
     if (this.#interrogationBundle === undefined) {
-      throw createError.BadRequest("Must set 'interrogation bundle' prior to invoking the questioning.")
+      throw createError.BadRequest(
+        "Must set 'interrogation bundle' prior to invoking the questioning."
+      )
     }
 
     await this.#processActions()
   }
 
-  get results() { return structuredClone(this.#results) }
+  get results() {
+    return structuredClone(this.#results)
+  }
 
   get values() {
-    return this.#results.reduce((acc, { parameter, value }) => { acc[parameter] = value; return acc }, {})
+    return this.#results.reduce((acc, { parameter, value }) => {
+      acc[parameter] = value
+
+      return acc
+    }, {})
   }
 
   #verifyInterrogationBundle() {
     const verifyMapping = ({ maps }) => {
       for (const { parameter, source, value } of maps) {
         if (parameter === undefined) {
-          throw createError.BadRequest("One of the mappings lacks a 'parameter' parameter.")
+          throw createError.BadRequest(
+            "One of the mappings lacks a 'parameter' parameter."
+          )
         }
         if (source === undefined && value === undefined) {
-          throw createError.BadRequest(`Mapping for '${parameter}' must specify one of 'source' or 'value'.`)
+          throw createError.BadRequest(
+            `Mapping for '${parameter}' must specify one of 'source' or 'value'.`
+          )
         }
       }
     }
@@ -464,21 +548,31 @@ const Questioner = class {
     const ib = this.#interrogationBundle
 
     ib.actions.forEach((action, i) => {
-      if (action.prompt === undefined
-          && action.maps === undefined
-          && action.statement === undefined
-          && action.review === undefined) {
-        throw createError.BadRequest('Action defines neither \'prompt\', \'maps\', \'statement\', nor \'review\'; cannot determine type.')
+      if (
+        action.prompt === undefined
+        && action.maps === undefined
+        && action.statement === undefined
+        && action.review === undefined
+      ) {
+        throw createError.BadRequest(
+          "Action defines neither 'prompt', 'maps', 'statement', nor 'review'; cannot determine type."
+        )
       }
       else if (action.prompt !== undefined) {
         // TODO: replace with some kind of JSON schema verification
         if (action.parameter === undefined) {
-          throw createError.BadRequest(`Question ${i + 1} does not define a 'parameter'.`)
+          throw createError.BadRequest(
+            `Question ${i + 1} does not define a 'parameter'.`
+          )
         }
-        if (action.type !== undefined 
-            && typeof action.type === 'string'
-            && !action.type.match(/bool(?:ean)?|int(?:eger)?|float|numeric|string/)) {
-          throw createError.BadRequest(`Found unknown parameter type '${action.type}' in interrogation bundle question ${i + 1}.`)
+        if (
+          action.type !== undefined
+          && typeof action.type === 'string'
+          && !action.type.match(/bool(?:ean)?|int(?:eger)?|float|numeric|string/)
+        ) {
+          throw createError.BadRequest(
+            `Found unknown parameter type '${action.type}' in interrogation bundle question ${i + 1}.`
+          )
         }
       }
       else if (action.maps !== undefined) {
@@ -486,7 +580,9 @@ const Questioner = class {
       }
       else if (action.review !== undefined) {
         if (!['all', 'questions'].includes(action.review)) {
-          throw createError.BadRequest(`Unknown review type '${action.review}'; must be 'all' or 'questions'.`)
+          throw createError.BadRequest(
+            `Unknown review type '${action.review}'; must be 'all' or 'questions'.`
+          )
         }
       }
     })
@@ -503,14 +599,16 @@ const Questioner = class {
 }
 
 const verifyAnswerForm = ({ type, input, ...paramOptions }) => {
-  const options = Object.assign({ name: paramOptions.parameter }, paramOptions)
+  const options = Object.assign({ name : paramOptions.parameter }, paramOptions)
   try {
     const value = type(input, options)
+
     return [value]
   }
   catch (e) {
-    rethrowIf(e, { instanceOfNot : ArgumentInvalidError, statusIsNot: 400 })
-    return [, e.message]
+    rethrowIf(e, { instanceOfNot : ArgumentInvalidError, statusIsNot : 400 })
+
+    return [undefined, e.message]
   }
 }
 

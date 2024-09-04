@@ -4,6 +4,7 @@ const ibClone = (structure) => {
     for (const member of structure) {
       result.push(ibClone(member))
     }
+
     return result
   }
 
