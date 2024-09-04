@@ -53,7 +53,7 @@ describe('Questioner - QnA flow', () => {
     }))
 
     const questioner = new Questioner({
-      interrogationBundle : doubleQuestionIB,
+      interactions : doubleQuestionIB,
       output,
     })
 
@@ -66,7 +66,7 @@ describe('Questioner - QnA flow', () => {
 
     const questioner = new Questioner({
       initialParameters,
-      interrogationBundle : ib,
+      interactions : ib,
     })
 
     questioner
@@ -95,12 +95,12 @@ describe('Questioner - QnA flow', () => {
     'initially defined string values are transformed according to the parameter type (%s: %s)',
     (type, input, expected, done) => {
       const ib = structuredClone(simpleIB)
-      ib.actions[0].type = type
+      ib[0].type = type
       const initialParameters = { IS_CLIENT : input }
 
       const questioner = new Questioner({
         initialParameters,
-        interrogationBundle : ib,
+        interactions : ib,
       })
 
       questioner
@@ -130,12 +130,12 @@ describe('Questioner - QnA flow', () => {
     'initially defined literal values are accepted (%s: %s)',
     (type, input, expected, done) => {
       const ib = structuredClone(simpleIB)
-      ib.actions[0].type = type
+      ib[0].type = type
       const initialParameters = { IS_CLIENT : input }
 
       const questioner = new Questioner({
         initialParameters,
-        interrogationBundle : ib,
+        interactions : ib,
       })
 
       questioner
@@ -159,13 +159,13 @@ describe('Questioner - QnA flow', () => {
 
   test("when question is condition-skipped, uses 'elseValue' if present", (done) => {
     const ib = structuredClone(simpleMapIB)
-    ib.actions[0].condition = 'FOO'
-    ib.actions[0].elseValue = false
+    ib[0].condition = 'FOO'
+    ib[0].elseValue = false
     const initialParameters = { FOO : false }
 
     const questioner = new Questioner({
       initialParameters,
-      interrogationBundle : ib,
+      interactions : ib,
     })
 
     questioner
@@ -216,7 +216,7 @@ describe('Questioner - QnA flow', () => {
     }))
 
     const questioner = new Questioner({
-      interrogationBundle : simpleIntQuestionIB,
+      interactions : simpleIntQuestionIB,
       output,
     })
     await questioner.question()
@@ -224,7 +224,7 @@ describe('Questioner - QnA flow', () => {
 
   test('Will re-ask questions when answer fails validation', async () => {
     const validationIB = structuredClone(simpleIntQuestionIB)
-    validationIB.actions[0].validations = { 'min-length' : 2 }
+    validationIB[0].validations = { 'min-length' : 2 }
 
     let readCount = 0
     readline.createInterface.mockImplementation(() => ({
@@ -254,7 +254,7 @@ describe('Questioner - QnA flow', () => {
     }))
 
     const questioner = new Questioner({
-      interrogationBundle : validationIB,
+      interactions : validationIB,
       output,
     })
     await questioner.question()
@@ -268,7 +268,7 @@ describe('Questioner - QnA flow', () => {
       /does not define a 'parameter'/,
     ],
   ])('Will raise an exception on %s.', (desc, ib, exceptionRe) => {
-    expect(() => new Questioner({ interrogationBundle : ib })).toThrow(
+    expect(() => new Questioner({ interactions : ib })).toThrow(
       exceptionRe
     )
   })

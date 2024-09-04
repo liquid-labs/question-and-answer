@@ -15,7 +15,7 @@ describe('ibClone', () => {
 
   test('deals with function types', () => {
     const simpleIB = structuredClone(testData.simpleIB)
-    simpleIB.actions[0].type = BooleanString
+    simpleIB[0].type = BooleanString
 
     const clone = ibClone(simpleIB)
     expect(clone).not.toBe(simpleIB)
@@ -24,7 +24,7 @@ describe('ibClone', () => {
 
   test('deals with object requirement values', () => {
     const simpleIB = structuredClone(testData.simpleIB)
-    simpleIB.actions[0].matchRe = /foo/
+    simpleIB[0].matchRe = /foo/
 
     const clone = ibClone(simpleIB)
     expect(clone).not.toBe(simpleIB)

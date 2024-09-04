@@ -37,7 +37,7 @@ describe('Questioner', () => {
       "simple boolean question answer '%s' -> %s",
       async (answer, expected) => {
         const ib = structuredClone(simpleIB)
-        ib.actions[0].type = 'int'
+        ib[0].type = 'int'
 
         let readCount = 0
         readline.createInterface.mockImplementation(() => ({
@@ -55,7 +55,7 @@ describe('Questioner', () => {
           close : () => undefined,
         }))
 
-        const questioner = new Questioner({ interrogationBundle : ib, output })
+        const questioner = new Questioner({ interactions : ib, output })
 
         await questioner.question()
         const result = questioner.getResult('IS_CLIENT')
@@ -105,7 +105,7 @@ describe('Questioner', () => {
         }))
 
         const questioner = new Questioner({
-          interrogationBundle : simpleIB,
+          interactions : simpleIB,
           output,
         })
 
@@ -134,7 +134,7 @@ describe('Questioner', () => {
       }))
 
       const questioner = new Questioner({
-        interrogationBundle : simpleMapIB,
+        interactions : simpleMapIB,
         output,
       })
 
@@ -150,7 +150,7 @@ describe('Questioner', () => {
       "source map 'FAVE_INT'=%s, yields '%s'=%s'",
       async (faveInt, parameter, value) => {
         const questioner = new Questioner({
-          interrogationBundle : sourceMappingIB,
+          interactions : sourceMappingIB,
           output,
         })
         readline.createInterface.mockImplementation(() => ({
@@ -174,10 +174,10 @@ describe('Questioner', () => {
     ])(
       "maps 'source'd type %s input '%s' -> %p",
       async (type, value, expected) => {
-        const interrogationBundle = structuredClone(simpleMapIB)
-        delete interrogationBundle.actions[1].maps[0].value
-        interrogationBundle.actions[1].maps[0].type = type
-        interrogationBundle.actions[1].maps[0].source = 'ENV_VAR'
+        const interactions = structuredClone(simpleMapIB)
+        delete interactions[1].maps[0].value
+        interactions[1].maps[0].type = type
+        interactions[1].maps[0].source = 'ENV_VAR'
         const initialParameters = { ENV_VAR : value }
 
         readline.createInterface.mockImplementation(() => ({
@@ -190,7 +190,7 @@ describe('Questioner', () => {
         }))
 
         const questioner = new Questioner({
-          interrogationBundle,
+          interactions,
           initialParameters,
           output,
         })
@@ -235,7 +235,7 @@ describe('Questioner', () => {
       }))
 
       const questioner = new Questioner({
-        interrogationBundle : conditionalQuestionIB,
+        interactions : conditionalQuestionIB,
         output,
       })
       await questioner.question()
@@ -243,14 +243,14 @@ describe('Questioner', () => {
 
     test("when question is condition-skipped, uses 'elseSource' if present", async () => {
       const ib = structuredClone(simpleMapIB)
-      ib.actions[0].condition = 'FOO'
-      ib.actions[0].elseSource = 'BAR || BAZ'
-      ib.actions[1].condition = 'BAZ'
+      ib[0].condition = 'FOO'
+      ib[0].elseSource = 'BAR || BAZ'
+      ib[1].condition = 'BAZ'
       const initialParameters = { FOO : false, BAR : true, BAZ : false }
 
       const questioner = new Questioner({
         initialParameters,
-        interrogationBundle : ib,
+        interactions : ib,
       })
 
       await questioner.question()
@@ -273,7 +273,7 @@ describe('Questioner', () => {
       ['6.6', 'numeric', 6.6],
     ])("Value '%s' type '%s' -> %p", async (value, type, expected) => {
       const ib = structuredClone(simpleIB)
-      ib.actions[0].type = type
+      ib[0].type = type
 
       readline.createInterface.mockImplementation(() => ({
         [Symbol.asyncIterator] : () => ({
@@ -284,7 +284,7 @@ describe('Questioner', () => {
         close : () => undefined,
       }))
 
-      const questioner = new Questioner({ interrogationBundle : ib, output })
+      const questioner = new Questioner({ interactions : ib, output })
 
       await questioner.question()
 
@@ -301,8 +301,8 @@ describe('Questioner', () => {
       [6.6, 'numeric', 6.6],
     ])("Default '%s' type '%s' -> %p", async (defaultValue, type, expected) => {
       const ib = structuredClone(simpleIB)
-      ib.actions[0].type = type
-      ib.actions[0].default = defaultValue
+      ib[0].type = type
+      ib[0].default = defaultValue
 
       let askCount = 0
       readline.createInterface.mockImplementation(() => ({
@@ -319,7 +319,7 @@ describe('Questioner', () => {
         close : () => undefined,
       }))
 
-      const questioner = new Questioner({ interrogationBundle : ib, output })
+      const questioner = new Questioner({ interactions : ib, output })
 
       await questioner.question()
 
@@ -346,9 +346,9 @@ describe('Questioner', () => {
       [' Hi   Bye ', ' ', ['Hi', 'Bye']],
     ])("Answer '%s' sep '%s' -> %p", async (answer, sep, expected) => {
       const ib = structuredClone(simpleIB)
-      delete ib.actions[0].type
-      ib.actions[0].multiValue = true
-      ib.actions[0].separator = sep
+      delete ib[0].type
+      ib[0].multiValue = true
+      ib[0].separator = sep
 
       readline.createInterface.mockImplementation(() => ({
         [Symbol.asyncIterator] : () => ({
@@ -359,7 +359,7 @@ describe('Questioner', () => {
         close : () => undefined,
       }))
 
-      const questioner = new Questioner({ interrogationBundle : ib, output })
+      const questioner = new Questioner({ interactions : ib, output })
 
       await questioner.question()
       expect(questioner.values.IS_CLIENT).toEqual(expected)
@@ -378,10 +378,10 @@ describe('Questioner', () => {
       [' 1   2 ', ' ', ['Hi', 'Bye']],
     ])("Answer '%s' sep '%s' -> %p", async (answer, sep, expected) => {
       const ib = structuredClone(simpleIB)
-      delete ib.actions[0].type
-      ib.actions[0].multiValue = true
-      ib.actions[0].separator = sep
-      ib.actions[0].options = ['Hi', 'Bye']
+      delete ib[0].type
+      ib[0].multiValue = true
+      ib[0].separator = sep
+      ib[0].options = ['Hi', 'Bye']
 
       readline.createInterface.mockImplementation(() => ({
         [Symbol.asyncIterator] : () => ({
@@ -392,7 +392,7 @@ describe('Questioner', () => {
         close : () => undefined,
       }))
 
-      const questioner = new Questioner({ interrogationBundle : ib, output })
+      const questioner = new Questioner({ interactions : ib, output })
 
       await questioner.question()
       expect(questioner.values.IS_CLIENT).toEqual(expected)
@@ -427,8 +427,8 @@ describe('Questioner', () => {
       "Value '%s' (%s) and requirement %s=%s is accepted",
       async (value, type, requirement, reqValue) => {
         const ib = structuredClone(simpleIB)
-        ib.actions[0].type = type
-        ib.actions[0][requirement] = reqValue
+        ib[0].type = type
+        ib[0][requirement] = reqValue
 
         readline.createInterface.mockImplementation(() => ({
           [Symbol.asyncIterator] : () => ({
@@ -439,7 +439,7 @@ describe('Questioner', () => {
           close : () => undefined,
         }))
 
-        const questioner = new Questioner({ interrogationBundle : ib, output })
+        const questioner = new Questioner({ interactions : ib, output })
 
         await questioner.question()
 
@@ -487,8 +487,8 @@ describe('Questioner', () => {
       "Value '%s' (%s) and requirement %s=%s is rejected",
       async (answer, type, requirement, reqValue, errorMatch, valid) => {
         const ib = structuredClone(simpleIB)
-        ib.actions[0].type = type
-        ib.actions[0][requirement] = reqValue
+        ib[0].type = type
+        ib[0][requirement] = reqValue
 
         let readCount = 0
         readline.createInterface.mockImplementation(() => ({
@@ -510,7 +510,7 @@ describe('Questioner', () => {
           close : () => undefined,
         }))
 
-        const questioner = new Questioner({ interrogationBundle : ib, output })
+        const questioner = new Questioner({ interactions : ib, output })
 
         await questioner.question()
       }
@@ -529,9 +529,9 @@ describe('Questioner', () => {
       "Value '%s' (%s) and requirement %s=%s is accepted",
       async (value, requirement, reqValue) => {
         const ib = structuredClone(simpleIB)
-        ib.actions[0].type = 'string'
-        ib.actions[0].multiValue = true
-        ib.actions[0][requirement] = reqValue
+        ib[0].type = 'string'
+        ib[0].multiValue = true
+        ib[0][requirement] = reqValue
 
         readline.createInterface.mockImplementation(() => ({
           [Symbol.asyncIterator] : () => ({
@@ -542,7 +542,7 @@ describe('Questioner', () => {
           close : () => undefined,
         }))
 
-        const questioner = new Questioner({ interrogationBundle : ib, output })
+        const questioner = new Questioner({ interactions : ib, output })
 
         await questioner.question()
         expect(questioner.values.IS_CLIENT + '').toBe(value)
@@ -560,9 +560,9 @@ describe('Questioner', () => {
       "Value '%s' (%s) and requirement %s=%s is rejected",
       async (answer, requirement, reqValue, valid) => {
         const ib = structuredClone(simpleIB)
-        ib.actions[0].multiValue = true
-        ib.actions[0].type = 'string'
-        ib.actions[0][requirement] = reqValue
+        ib[0].multiValue = true
+        ib[0].type = 'string'
+        ib[0][requirement] = reqValue
 
         let readCount = 0
         readline.createInterface.mockImplementation(() => ({
@@ -582,7 +582,7 @@ describe('Questioner', () => {
           close : () => undefined,
         }))
 
-        const questioner = new Questioner({ interrogationBundle : ib, output })
+        const questioner = new Questioner({ interactions : ib, output })
 
         await questioner.question()
       }
@@ -591,7 +591,7 @@ describe('Questioner', () => {
 
   describe('cookie parameters', () => {
     const questioner = new Questioner({
-      interrogationBundle : cookieParameterIB,
+      interactions : cookieParameterIB,
       output,
     })
 
@@ -619,7 +619,7 @@ describe('Questioner', () => {
   describe('statements', () => {
     test('prints statement', async () => {
       const questioner = new Questioner({
-        interrogationBundle : statementIB,
+        interactions : statementIB,
         output,
       })
 
@@ -630,7 +630,7 @@ describe('Questioner', () => {
 
     test('properly skips condition skip statements', async () => {
       const questioner = new Questioner({
-        interrogationBundle : conditionStatementIB,
+        interactions : conditionStatementIB,
         output,
       })
       await questioner.question()
@@ -646,7 +646,7 @@ describe('Questioner', () => {
       ['bool', 't', true],
     ])('validate type %s input %s => %s', async (type, input, expected) => {
       const validateIB = structuredClone(simpleIB)
-      validateIB.actions[0].type = type
+      validateIB[0].type = type
 
       readline.createInterface.mockImplementation(() => ({
         [Symbol.asyncIterator] : () => ({
@@ -658,7 +658,7 @@ describe('Questioner', () => {
       }))
 
       const questioner = new Questioner({
-        interrogationBundle : validateIB,
+        interactions : validateIB,
         output,
       })
       await questioner.question()
