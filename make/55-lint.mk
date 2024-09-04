@@ -10,31 +10,19 @@ SDLC_LINT_REPORT:=$(QA)/lint.txt
 SDLC_LINT_PASS_MARKER:=$(QA)/.lint.passed
 LINT_TARGETS+=$(SDLC_LINT_REPORT) $(SDLC_LINT_PASS_MARKER)
 PRECIOUS_TARGETS+=$(SDLC_LINT_REPORT)
-
-LINT_IGNORE_PATTERNS:=--ignore-pattern '$(DIST)/**/*'\
---ignore-pattern '$(TEST_STAGING)/**/*'\
---ignore-pattern '$(DOC)/**/*'
+FANDL:=npx fandl
 
 $(SDLC_LINT_REPORT) $(SDLC_LINT_PASS_MARKER): $(SDLC_ALL_JS_FILES_SRC)
 	mkdir -p $(dir $@)
 	echo -n 'Test git rev: ' > $(SDLC_LINT_REPORT)
 	git rev-parse HEAD >> $(SDLC_LINT_REPORT)
 	( set -e; set -o pipefail; \
-	  $(SDLC_ESLINT) \
-	    --config $(SDLC_ESLINT_CONFIG) \
-	    --ext .cjs,.js,.mjs,.cjs,.xjs \
-	    $(LINT_IGNORE_PATTERNS) \
-	    . \
+	  $(FANDL) --check \
 	    | tee -a $(SDLC_LINT_REPORT); \
 	  touch $(SDLC_LINT_PASS_MARKER) )
 
 lint-fix:
-	@( set -e; set -o pipefail; \
-	  $(SDLC_ESLINT) \
-	    --config $(SDLC_ESLINT_CONFIG) \
-	    --ext .js,.mjs,.cjs,.xjs \
-	    $(LINT_IGNORE_PATTERNS) \
-	    --fix . )
+	$(FANDL)
 
 #####
 # end lint
