@@ -15,6 +15,8 @@ import {
 import { Questioner, ANSWERED, CONDITION_SKIPPED } from '../questioner'
 
 import { getPrinter, StringOut } from 'magic-print'
+import * as types from 'string-input'
+
 jest.mock('node:readline')
 
 describe('Questioner', () => {
@@ -31,7 +33,7 @@ describe('Questioner', () => {
       ['-1', -1]
     ])("simple boolean question answer '%s' -> %s", async(answer, expected) => {
       const ib = structuredClone(simpleIB)
-      ib.actions[0].paramType = 'int'
+      ib.actions[0].type = 'int'
 
       let readCount = 0
       readline.createInterface.mockImplementation(() => ({
@@ -114,13 +116,13 @@ describe('Questioner', () => {
       const questioner = new Questioner({ interrogationBundle : simpleMapIB, output })
 
       await questioner.question()
-      expect(questioner.values.ORG_COMMON_NAME).toBe(value)
+      expect(questioner.values.ORG_COMMON_NAME).toEqual(value)
     })
 
     test.each([
       ['1', 'FAVE_DIFF', 2],
       ['1', 'IS_FAVE_NOT_ZERO', true],
-      ['0', 'IS_FAVE_NOT_ZERO', false]
+      ['0', 'IS_FAVE_NOT_ZERO', false],
     ])("source map 'FAVE_INT'=%s, yields '%s'=%s'", async(faveInt, parameter, value) => {
       const questioner = new Questioner({ interrogationBundle : sourceMappingIB, output })
       readline.createInterface.mockImplementation(() => ({
@@ -138,10 +140,10 @@ describe('Questioner', () => {
     test.each([
       ['bool', 'y', true],
       ['int', '1', 1]
-    ])('maps \'source\'d paramType %s input \'%s\' -> %p', async(paramType, value, expected) => {
+    ])('maps \'source\'d type %s input \'%s\' -> %p', async(type, value, expected) => {
       const interrogationBundle = structuredClone(simpleMapIB)
       delete interrogationBundle.actions[1].maps[0].value
-      interrogationBundle.actions[1].maps[0].paramType = paramType
+      interrogationBundle.actions[1].maps[0].type = type
       interrogationBundle.actions[1].maps[0].source = 'ENV_VAR'
       const initialParameters = { ENV_VAR : value }
 
@@ -163,7 +165,7 @@ describe('Questioner', () => {
   describe('Conditional questions', () => {
     test.each([
       ['yes', DO_YOU_LIKE_MILK],
-      ['no', IS_THIS_THE_END]
+      ['no', IS_THIS_THE_END],
     ])('Conditional question %s -> %s', async(answer, followup) => {
       let readCount = 0
       readline.createInterface.mockImplementation(() => ({
@@ -219,7 +221,7 @@ describe('Questioner', () => {
       ['6.6', 'numeric', 6.6]
     ])("Value '%s' type '%s' -> %p", async(value, type, expected) => {
       const ib = structuredClone(simpleIB)
-      ib.actions[0].paramType = type
+      ib.actions[0].type = type
 
       readline.createInterface.mockImplementation(() => ({
         [Symbol.asyncIterator] : () => ({
@@ -245,12 +247,19 @@ describe('Questioner', () => {
       [6.6, 'numeric', 6.6]
     ])("Default '%s' type '%s' -> %p", async(defaultValue, type, expected) => {
       const ib = structuredClone(simpleIB)
-      ib.actions[0].paramType = type
+      ib.actions[0].type = type
       ib.actions[0].default = defaultValue
 
+      let askCount = 0
       readline.createInterface.mockImplementation(() => ({
         [Symbol.asyncIterator] : () => ({
-          next : async() => { return { value : '' } }
+          next : async() => {
+            if (askCount > 1) {
+              throw new Error('Failed to default on first ask.')
+            }
+            askCount += 1
+            return { value : '' }
+          }
         }),
         close : () => undefined
       }))
@@ -282,7 +291,7 @@ describe('Questioner', () => {
       [' Hi   Bye ', ' ', ['Hi', 'Bye']]
     ])("Answer '%s' sep '%s' -> %p", async(answer, sep, expected) => {
       const ib = structuredClone(simpleIB)
-      delete ib.actions[0].paramType
+      delete ib.actions[0].type
       ib.actions[0].multiValue = true
       ib.actions[0].separator = sep
 
@@ -312,7 +321,7 @@ describe('Questioner', () => {
       [' 1   2 ', ' ', ['Hi', 'Bye']]
     ])("Answer '%s' sep '%s' -> %p", async(answer, sep, expected) => {
       const ib = structuredClone(simpleIB)
-      delete ib.actions[0].paramType
+      delete ib.actions[0].type
       ib.actions[0].multiValue = true
       ib.actions[0].separator = sep
       ib.actions[0].options = ['Hi', 'Bye']
@@ -357,7 +366,7 @@ describe('Questioner', () => {
       ['Hi', 'string', 'requireMatch', '^[Hi]*$']
     ])("Value '%s' (%s) and requirement %s=%s is accepted", async(value, type, requirement, reqValue) => {
       const ib = structuredClone(simpleIB)
-      ib.actions[0].paramType = type
+      ib.actions[0].type = type
       ib.actions[0][requirement] = reqValue
 
       readline.createInterface.mockImplementation(() => ({
@@ -375,27 +384,23 @@ describe('Questioner', () => {
     })
 
     test.each([
-      // requireSomething
-      ['', 'string', 'requireSomething', true, 'blah'],
-      // requireTruthy
-      ['', 'string', 'requireTruthy', true, 'blah'],
-      ['0', 'int', 'requireTruthy', true, '1'],
-      ['false', 'bool', 'requireExact', true, 'true'],
-      // requireExact
-      ['Hi', 'string', 'requireExact', 'Bye', 'Bye'],
-      ['1', 'int', 'requireExact', 2, '2'],
-      ['true', 'bool', 'requireExact', false, 'false'],
-      ['false', 'bool', 'requireExact', true, 'true'],
-      // requireOneOf
-      ['Hello', 'string', 'requireOneOf', 'Hi, Bye', 'Hi'],
-      ['10', 'int', 'requireOneOf', [1, 2], '1'],
-      ['false', 'bool', 'requireOneOf', [true], 'true'],
+      // minLength
+      ['', 'string', 'minLength', 1, /must be at least 1 characters long\./, 'blah'],
+      // oneOf (singular)
+      ['Hi', 'string', 'oneOf', ['Bye'], /must be 'Bye'/, 'Bye'],
+      ['1', 'int', 'oneOf', [2], /must be '2'/, '2'],
+      ['true', 'bool', 'oneOf', [false], /must be 'false'/, 'false'],
+      ['false', 'bool', 'oneOf', [true], /must be 'true'/, 'true'],
+      // oneOf (multiple)
+      ['Hello', 'string', 'oneOf', 'Hi, Bye', /must be one of 'Hi', 'Bye'/, 'Hi'],
+      ['10', 'int', 'oneOf', [1, 2], /must be one of '1', '2'/, '1'],
       // requireMatch
-      ['Hi', 'string', 'requireMatch', 'Bye', 'Bye'],
-      ['Hi', 'string', 'requireMatch', '^[Bye]*$', 'ByeBye']
-    ])("Value '%s' (%s) and requirement %s=%s is rejected", async(answer, type, requirement, reqValue, valid) => {
+      ['Hi', 'string', 'matchRe', 'Bye', /must match \/Bye\//, 'Bye'],
+      ['Hi', 'string', 'matchRe', '^[Bye]*$', /must match \/\^\[Bye\]\*\$\//, 'ByeBye'],
+      ['Hi', 'string', 'matchRe', /Bye/, /must match \/Bye\//, 'Bye'],
+    ])("Value '%s' (%s) and requirement %s=%s is rejected", async(answer, type, requirement, reqValue, errorMatch, valid) => {
       const ib = structuredClone(simpleIB)
-      ib.actions[0].paramType = type
+      ib.actions[0].type = type
       ib.actions[0][requirement] = reqValue
 
       let readCount = 0
@@ -408,7 +413,7 @@ describe('Questioner', () => {
               return { value : answer }
             }
             else {
-              expect(stringOut.string.trim()).toMatch(/must/)
+              expect(stringOut.string.trim()).toMatch(errorMatch)
               return { value : valid }
             }
           }
@@ -432,7 +437,7 @@ describe('Questioner', () => {
       ['Hi,Bye', 'requireMaxCount', 2]
     ])("Value '%s' (%s) and requirement %s=%s is accepted", async(value, requirement, reqValue) => {
       const ib = structuredClone(simpleIB)
-      ib.actions[0].paramType = 'string'
+      ib.actions[0].type = 'string'
       ib.actions[0].multiValue = true
       ib.actions[0][requirement] = reqValue
 
@@ -459,7 +464,7 @@ describe('Questioner', () => {
     ])("Value '%s' (%s) and requirement %s=%s is rejected", async(answer, requirement, reqValue, valid) => {
       const ib = structuredClone(simpleIB)
       ib.actions[0].multiValue = true
-      ib.actions[0].paramType = 'string'
+      ib.actions[0].type = 'string'
       ib.actions[0][requirement] = reqValue
 
       let readCount = 0
@@ -523,6 +528,29 @@ describe('Questioner', () => {
       await questioner.question()
 
       expect(stringOut.string.trim()).toBe('Bye!')
+    })
+  })
+
+  describe('validation', () => {
+    test.each([
+      ['int', '1', 1],
+      [types.Integer, '-2', -2],
+      ['bool', 't', true]
+    ])('validate type %s input %s => %s', async (type, input, expected) => {
+      const validateIB = structuredClone(simpleIB)
+      validateIB.actions[0].type = type
+
+      readline.createInterface.mockImplementation(() => ({
+        [Symbol.asyncIterator] : () => ({
+          next : async() => { return { value : input } }
+        }),
+        close : () => undefined
+      }))
+
+      const questioner = new Questioner({ interrogationBundle: validateIB, output })
+      await questioner.question()
+
+      expect(questioner.get('IS_CLIENT')).toBe(expected)
     })
   })
 })

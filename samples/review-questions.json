@@ -1,6 +1,6 @@
 {
   "actions": [
-    { "prompt": "How many moons does the earth have?", "paramType": "int", "parameter": "MOON_COUNT" },
+    { "prompt": "How many moons does the earth have?", "type": "int", "parameter": "MOON_COUNT" },
     { "statement": "Double check your answer."}
     { "review": "questions" }
   ]

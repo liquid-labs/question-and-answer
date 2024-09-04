@@ -61,6 +61,7 @@ describe('Questioner - QnA flow', () => {
       }
       finally { done() }
     })
+    .catch((e) => { throw(e) })
   })
 
   test.each([
@@ -68,9 +69,9 @@ describe('Questioner - QnA flow', () => {
     ['int', '100', 100],
     ['int', '-1', -1]
   ])('initially defined string values are transformed according to the parameter type (%s: %s)',
-    (paramType, input, expected, done) => {
+    (type, input, expected, done) => {
       const ib = structuredClone(simpleIB)
-      ib.actions[0].paramType = paramType
+      ib.actions[0].type = type
       const initialParameters = { IS_CLIENT : input }
 
       const questioner = new Questioner({ initialParameters, interrogationBundle : ib })
@@ -82,6 +83,7 @@ describe('Questioner - QnA flow', () => {
         }
         finally { done() }
       })
+      .catch((e) => { throw e })
     })
 
   test.each([
@@ -89,9 +91,9 @@ describe('Questioner - QnA flow', () => {
     ['int', 100, 100],
     ['int', -1, -1]
   ])('initially defined literal values are accepted (%s: %s)',
-    (paramType, input, expected, done) => {
+    (type, input, expected, done) => {
       const ib = structuredClone(simpleIB)
-      ib.actions[0].paramType = paramType
+      ib.actions[0].type = type
       const initialParameters = { IS_CLIENT : input }
 
       const questioner = new Questioner({ initialParameters, interrogationBundle : ib })
@@ -103,7 +105,8 @@ describe('Questioner - QnA flow', () => {
         }
         finally { done() }
       })
-    })
+      .catch((e) => { throw e })
+  })
 
   test("when question is condition-skipped, uses 'elseValue' if present", (done) => {
     const ib = structuredClone(simpleMapIB)
@@ -121,6 +124,7 @@ describe('Questioner - QnA flow', () => {
       }
       finally { done() }
     })
+    .catch((e) => { throw e })
   })
 
   test('Will re-ask questions when answer form invalid', async() => {
@@ -135,7 +139,7 @@ describe('Questioner - QnA flow', () => {
             return { value : 'not a number' }
           }
           else if (readCount === 2) {
-            expect(stringOut.string.trim()).toMatch(/not a valid.+?\n+What's your/m)
+            expect(stringOut.string.trim()).toMatch(/does\snot\sappear\sto\sbe\san\sinteger.+?\n+What's your/m)
             return { value : '12' }
             // expect(stringOut.string.trim()).toMatch(/not a valid.+\n.+favorite int/m)
           }
@@ -150,8 +154,8 @@ describe('Questioner - QnA flow', () => {
   })
 
   test('Will re-ask questions when answer fails validation', async() => {
-    const validaitonIB = structuredClone(simpleIntQuestionIB)
-    validaitonIB.actions[0].validations = { 'min-length' : 2 }
+    const validationIB = structuredClone(simpleIntQuestionIB)
+    validationIB.actions[0].validations = { 'min-length' : 2 }
 
     let readCount = 0
     readline.createInterface.mockImplementation(() => ({
@@ -174,7 +178,7 @@ describe('Questioner - QnA flow', () => {
       close : () => undefined
     }))
 
-    const questioner = new Questioner({ interrogationBundle : validaitonIB, output })
+    const questioner = new Questioner({ interrogationBundle : validationIB, output })
     await questioner.question()
   })
 

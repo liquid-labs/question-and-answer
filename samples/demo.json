@@ -12,7 +12,7 @@
     },
     {
       "prompt": "What's your favorite integer number?",
-      "paramType": "integer",
+      "type": "integer",
       "parameter": "FAVORITE_NUMBER"
     },
     { 
@@ -22,8 +22,8 @@
     },
     {
       "maps": [
-        { "source": "FAVORITE_NUMBER > 99", "parameter": "GT100", "paramType": "boolean" },
-        { "source": "FAVORITE_NUMBER * 2", "parameter": "TWOX", "paramType": "integer" }
+        { "source": "FAVORITE_NUMBER > 99", "parameter": "GT100", "type": "boolean" },
+        { "source": "FAVORITE_NUMBER * 2", "parameter": "TWOX", "type": "integer" }
       ]
     },
     { "review": "all" }
