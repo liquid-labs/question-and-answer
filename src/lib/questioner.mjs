@@ -14,9 +14,8 @@
 import * as readline from 'node:readline'
 
 import columns from 'cli-columns'
-import createError from 'http-errors'
 import { getPrinter } from 'magic-print'
-import { ArgumentInvalidError, rethrowIf } from 'standard-error-set'
+import { ArgumentInvalidError, ArgumentMissingError, rethrowIf } from 'standard-error-set'
 import { BooleanString, Integer, Numeric } from 'string-input'
 
 import { Evaluator } from '@liquid-labs/condition-eval'
@@ -286,7 +285,11 @@ const Questioner = class {
         const input = this.get(action.parameter).toString()
         const [value, issue] = verifyAnswerForm({ ...action, input, type })
         if (issue !== undefined) {
-          throw createError.BadRequest(issue)
+          throw new ArgumentInvalidError({
+            endpointType: 'input',
+            argumentName: action.parameter,
+            issue,
+          })
         }
         this.#addResult({ source : action, value })
       }
@@ -326,9 +329,12 @@ const Questioner = class {
           }
         }
         else {
-          throw createError.BadRequest(
-            `Could not determine action type of ${action}.`
-          )
+          throw new ArgumentInvalidError({
+            endpointType: 'configuration',
+            argumentName: 'interrogationBundle',
+            issue: `could not determine action type of ${action}`,
+            status: 500,
+          })
         }
       } // else not defined skip
       first = false
@@ -391,9 +397,13 @@ const Questioner = class {
 
           // recall maps only support boolean and numeric types
           if (![BooleanString, Integer, Numeric].includes(type)) {
-            throw createError.BadRequest(
-              `Cannot map a 'source' value to parameter '${map.parameter}' of type '${map.type || 'string'}'. Type must be 'boolean', 'integer', or 'numeric'.`
-            )
+            throw new ArgumentInvalidError({
+              endpointType: 'configuration',
+              argumentName: 'interrogationBundle',
+              issue: `cannot map a 'source' value to parameter '${map.parameter}' of type '${map.type || 'string'}'`,
+              hint: "Type must be 'boolean', 'integer', or 'numeric'.",
+              status: 500,
+            })
           }
           else if (map.type === BooleanString) {
             value = this.#evalTruth(map.source)
@@ -509,9 +519,12 @@ const Questioner = class {
 
   async question() {
     if (this.#interrogationBundle === undefined) {
-      throw createError.BadRequest(
-        "Must set 'interrogation bundle' prior to invoking the questioning."
-      )
+      throw ArgumentMissingError({
+        endpointType: 'function',
+        argumentName: 'interrogationBundle',
+        issue : "must be set prior to invoking 'question'",
+        status: 500,
+      })
     }
 
     await this.#processActions()
@@ -533,14 +546,20 @@ const Questioner = class {
     const verifyMapping = ({ maps }) => {
       for (const { parameter, source, value } of maps) {
         if (parameter === undefined) {
-          throw createError.BadRequest(
-            "One of the mappings lacks a 'parameter' parameter."
-          )
+          throw new ArgumentInvalidError({
+            endpointType: 'configuration',
+            argumentName: 'interrogationBundle',
+            issue: `one of the 'mapping' actions fails to specify a 'parameter'`,
+            status: 500,
+          })
         }
         if (source === undefined && value === undefined) {
-          throw createError.BadRequest(
-            `Mapping for '${parameter}' must specify one of 'source' or 'value'.`
-          )
+          throw new ArgumentInvalidError({
+            endpointType: 'configuration',
+            argumentName: 'interrogationBundle',
+            issue: `mapping for '${parameter}' must specify one of 'source' or 'value'`,
+            status: 500,
+          })
         }
       }
     }
@@ -554,25 +573,34 @@ const Questioner = class {
         && action.statement === undefined
         && action.review === undefined
       ) {
-        throw createError.BadRequest(
-          "Action defines neither 'prompt', 'maps', 'statement', nor 'review'; cannot determine type."
-        )
+        throw new ArgumentInvalidError({
+          endpointType: 'configuration',
+          argumentName: 'interrogationBundle',
+          issue: `action ${i + 1} defines neither 'prompt', 'maps', 'statement', nor 'review'; cannot determine type`,
+          status: 500,
+        })
       }
       else if (action.prompt !== undefined) {
         // TODO: replace with some kind of JSON schema verification
         if (action.parameter === undefined) {
-          throw createError.BadRequest(
-            `Question ${i + 1} does not define a 'parameter'.`
-          )
+          throw new ArgumentInvalidError({
+            endpointType: 'configuration',
+            argumentName: 'interrogationBundle',
+            issue: `question ${i + 1} does not define a 'parameter'`,
+            status: 500,
+          })
         }
         if (
           action.type !== undefined
           && typeof action.type === 'string'
           && !action.type.match(/bool(?:ean)?|int(?:eger)?|float|numeric|string/)
         ) {
-          throw createError.BadRequest(
-            `Found unknown parameter type '${action.type}' in interrogation bundle question ${i + 1}.`
-          )
+          throw new ArgumentInvalidError({
+            endpointType: 'configuration',
+            argumentName: 'interrogationBundle',
+            issue: `invalid parameter type '${action.type}' in interrogation bundle question ${i + 1}`,
+            status: 500,
+          })
         }
       }
       else if (action.maps !== undefined) {
@@ -580,9 +608,12 @@ const Questioner = class {
       }
       else if (action.review !== undefined) {
         if (!['all', 'questions'].includes(action.review)) {
-          throw createError.BadRequest(
-            `Unknown review type '${action.review}'; must be 'all' or 'questions'.`
-          )
+          throw new ArgumentInvalidError({
+            endpointType: 'configuration',
+            argumentName: 'interrogationBundle',
+            issue: `invalid review type '${action.review}'; must be 'all' or 'questions'`,
+            status: 500,
+          })
         }
       }
     })

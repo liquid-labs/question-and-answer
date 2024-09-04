@@ -261,7 +261,7 @@ describe('Questioner - QnA flow', () => {
   })
 
   test.each([
-    ['an invalid parameter type', badParameterIB, /unknown parameter type/i],
+    ['an invalid parameter type', badParameterIB, /invalid parameter type/i],
     [
       "no 'parameter' for question",
       noQuestionParameterIB,
