@@ -1,0 +1,22 @@
+Test git rev: ba3f46e4f523199fdcd8576bf978e7e6d2d1b22a
+(node:31966) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+PASS lib/test/questioner.qna-flow.test.js
+PASS lib/test/questioner.test.js
+PASS lib/lib/test/ib-clone.test.js
+---------------------|---------|----------|---------|---------|-----------------------------------------------------------------------------------------------------
+File                 | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s                                                                                   
+---------------------|---------|----------|---------|---------|-----------------------------------------------------------------------------------------------------
+All files            |   72.56 |       68 |   78.78 |   72.69 |                                                                                                     
+ lib                 |   69.96 |    64.93 |   77.41 |   70.04 |                                                                                                     
+  questioner.mjs     |   69.96 |    64.93 |   77.41 |   70.04 | 123,143-149,166-167,171,225,296,322-340,384,394,408,417,434,443-523,530,542,557,566,583,617-618,634 
+ lib/lib             |   91.42 |    90.47 |     100 |   91.42 |                                                                                                     
+  ib-clone.mjs       |   94.44 |      100 |     100 |   94.44 | 31                                                                                                  
+  translate-type.mjs |   88.23 |    88.88 |     100 |   88.23 | 13,35                                                                                               
+---------------------|---------|----------|---------|---------|-----------------------------------------------------------------------------------------------------
+
+Test Suites: 3 passed, 3 total
+Tests:       135 passed, 135 total
+Snapshots:   0 total
+Time:        0.58 s, estimated 1 s
+Ran all test suites.
