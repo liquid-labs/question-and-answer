@@ -6,10 +6,10 @@
  * ## Developer notes
  *
  * We're not strictly enforcing parameter types in-so-far as action defined parameters `value`, `source`, `elseValue`
- * and `elseSource` are essentialy "trusted" to be of the proper type, though we do  but we should check and coerce
+ * and `elseSource` are essentially "trusted" to be of the proper type, though we do  but we should check and coerce
  * string results (from the values). Also, why not have `evalString` as an option from condition eval? E.g., `'' ||
  * 'Larry'` is a valid expression. (If we do this, it might make sense to separate out the 'safe expression' testing
- * to be distinct based on the type of item; e.g., '+' and '||' are valid with strings, but '%' is just non-sensical.)
+ * to be distinct based on the type of item; e.g., '+' and '||' are valid with strings, but '%' is just nonsensical.)
  */
 import * as readline from 'node:readline'
 
@@ -36,7 +36,7 @@ const Questioner = class {
   #initialParameters
   #input
   #output
-  #interrogationBundle = []
+  #interactions = []
   #noSkipDefined
   #results = []
 
@@ -44,7 +44,7 @@ const Questioner = class {
    * Creates a `Questioner`.
    * @param {object} options - Constructor options.
    * @param {object} [options.input = process.stdin] - The object passed to `readline` as input.
-   * @param {object} options.interrogationBundle - The interrogation spec.
+   * @param {object} options.interactions - The interrogation spec.
    * @param {object} [options.initialParameters = {}] - Key/value object defining initial parameter values.
    * @param {boolean} [options.noSkipDefined = false] - By default, questions related to defined parameters are
    *   skipped. If this option is true, then defined questions are asked.
@@ -55,7 +55,7 @@ const Questioner = class {
    */
   constructor({
     input = process.stdin,
-    interrogationBundle,
+    interactions,
     initialParameters = {},
     noSkipDefined = false,
     output,
@@ -67,14 +67,14 @@ const Questioner = class {
       output = { write : print }
     }
     this.#output = output
-    this.#interrogationBundle = ibClone(interrogationBundle)
+    this.#interactions = ibClone(interactions)
     this.#initialParameters = initialParameters
     this.#noSkipDefined = noSkipDefined
 
     this.#verifyInterrogationBundle()
 
     let index = 0
-    for (const action of this.#interrogationBundle.actions) {
+    for (const action of this.#interactions) {
       action._index = index
       index += 1
     }
@@ -243,7 +243,7 @@ const Questioner = class {
   async #processActions() {
     let first = true
     let previousAction
-    for (const action of this.#interrogationBundle.actions) {
+    for (const action of this.#interactions) {
       // check condition skip
       if (
         action.condition !== undefined
@@ -339,7 +339,7 @@ const Questioner = class {
         else {
           throw new ArgumentInvalidError({
             endpointType : 'configuration',
-            argumentName : 'interrogationBundle',
+            argumentName : 'interactions',
             issue        : `could not determine action type of ${action}`,
             status       : 500,
           })
@@ -347,7 +347,7 @@ const Questioner = class {
       } // else not defined skip
       first = false
       previousAction = action
-    } // for (... this.#interrogationBundle.actions)
+    } // for (... this.#interactions)
   }
 
   #evalNumber(condition) {
@@ -390,8 +390,8 @@ const Questioner = class {
     )
   }
 
-  get interrogationBundle() {
-    return this.#interrogationBundle
+  get interactions() {
+    return this.#interactions
   }
 
   #processMapping(mapping) {
@@ -407,7 +407,7 @@ const Questioner = class {
           if (![BooleanString, Integer, Numeric].includes(type)) {
             throw new ArgumentInvalidError({
               endpointType : 'configuration',
-              argumentName : 'interrogationBundle',
+              argumentName : 'interactions',
               issue        : `cannot map a 'source' value to parameter '${map.parameter}' of type '${map.type || 'string'}'`,
               hint         : "Type must be 'boolean', 'integer', or 'numeric'.",
               status       : 500,
@@ -451,7 +451,7 @@ const Questioner = class {
   async #processReview(reviewAction) {
     const reviewType = reviewAction.review
     const included = []
-    for (const action of this.#interrogationBundle.actions) {
+    for (const action of this.#interactions) {
       if (action === reviewAction) {
         break
       }
@@ -526,10 +526,10 @@ const Questioner = class {
   }
 
   async question() {
-    if (this.#interrogationBundle === undefined) {
+    if (this.#interactions === undefined) {
       throw ArgumentMissingError({
         endpointType : 'function',
-        argumentName : 'interrogationBundle',
+        argumentName : 'interactions',
         issue        : "must be set prior to invoking 'question'",
         status       : 500,
       })
@@ -556,15 +556,16 @@ const Questioner = class {
         if (parameter === undefined) {
           throw new ArgumentInvalidError({
             endpointType : 'configuration',
-            argumentName : 'interrogationBundle',
-            issue        : 'one of the \'mapping\' actions fails to specify a \'parameter\'',
-            status       : 500,
+            argumentName : 'interactions',
+            issue :
+              "one of the 'mapping' actions fails to specify a 'parameter'",
+            status : 500,
           })
         }
         if (source === undefined && value === undefined) {
           throw new ArgumentInvalidError({
             endpointType : 'configuration',
-            argumentName : 'interrogationBundle',
+            argumentName : 'interactions',
             issue        : `mapping for '${parameter}' must specify one of 'source' or 'value'`,
             status       : 500,
           })
@@ -572,9 +573,7 @@ const Questioner = class {
       }
     }
 
-    const ib = this.#interrogationBundle
-
-    ib.actions.forEach((action, i) => {
+    this.#interactions.forEach((action, i) => {
       if (
         action.prompt === undefined
         && action.maps === undefined
@@ -583,7 +582,7 @@ const Questioner = class {
       ) {
         throw new ArgumentInvalidError({
           endpointType : 'configuration',
-          argumentName : 'interrogationBundle',
+          argumentName : 'interactions',
           issue        : `action ${i + 1} defines neither 'prompt', 'maps', 'statement', nor 'review'; cannot determine type`,
           status       : 500,
         })
@@ -593,7 +592,7 @@ const Questioner = class {
         if (action.parameter === undefined) {
           throw new ArgumentInvalidError({
             endpointType : 'configuration',
-            argumentName : 'interrogationBundle',
+            argumentName : 'interactions',
             issue        : `question ${i + 1} does not define a 'parameter'`,
             status       : 500,
           })
@@ -605,7 +604,7 @@ const Questioner = class {
         ) {
           throw new ArgumentInvalidError({
             endpointType : 'configuration',
-            argumentName : 'interrogationBundle',
+            argumentName : 'interactions',
             issue        : `invalid parameter type '${action.type}' in interrogation bundle question ${i + 1}`,
             status       : 500,
           })
@@ -618,7 +617,7 @@ const Questioner = class {
         if (!['all', 'questions'].includes(action.review)) {
           throw new ArgumentInvalidError({
             endpointType : 'configuration',
-            argumentName : 'interrogationBundle',
+            argumentName : 'interactions',
             issue        : `invalid review type '${action.review}'; must be 'all' or 'questions'`,
             status       : 500,
           })

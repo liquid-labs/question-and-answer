@@ -5,7 +5,7 @@ import { Questioner } from '../lib/questioner'
 const filePath = process.argv[2]
 const envFile = process.argv[3];
 (async () => {
-  const interrogationBundle = JSON.parse(
+  const interactions = JSON.parse(
     await fs.readFile(filePath, { encoding : 'utf8' })
   )
   const initialParameters =
@@ -13,7 +13,7 @@ const envFile = process.argv[3];
       ? {}
       : JSON.parse(await fs.readFile(envFile, { encoding : 'utf8' }))
 
-  const questioner = new Questioner({ initialParameters, interrogationBundle })
+  const questioner = new Questioner({ initialParameters, interactions })
   await questioner.question()
 
   console.log(

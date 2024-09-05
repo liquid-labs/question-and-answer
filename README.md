@@ -18,39 +18,37 @@ npm i question-and-answer
 ```javascript
 import { Questioner } from 'question-and-answer'
 
-const interrogationBundle = {
-  "actions": [
-    { "statement": "Let us know your thoughts!" },
-    { 
-      "prompt": "What are your 2 or 3 favorite colors?",
-      "multiValue": true,
-      "parameter": "FAVORITE_COLOR",
-      "validations": {
-        "min-count": 2,
-        "max-count": 3
-      }
-    },
-    {
-      "prompt": "What's your favorite integer number?",
-      "type": "integer",
-      "parameter": "FAVORITE_NUMBER"
-    },
-    { 
-      "prompt": "Which is best?",
-      "options": [ "love", "honor", "justice" ],
-      "parameter": "BEST_VIRTUE"
-    },
-    {
-      "maps": [
-        { "source": "FAVORITE_NUMBER > 99", "parameter": "GT100", "type": "boolean" },
-        { "source": "FAVORITE_NUMBER * 2", "parameter": "TWOX", "type": "integer" }
-      ]
-    },
-    { "review": "questions" }
-  ]
-}
+const interactions = [
+  { "statement": "Let us know your thoughts!" },
+  { 
+    "prompt": "What are your 2 or 3 favorite colors?",
+    "multiValue": true,
+    "parameter": "FAVORITE_COLOR",
+    "validations": {
+      "min-count": 2,
+      "max-count": 3
+    }
+  },
+  {
+    "prompt": "What's your favorite integer number?",
+    "type": "integer",
+    "parameter": "FAVORITE_NUMBER"
+  },
+  { 
+    "prompt": "Which is best?",
+    "options": [ "love", "honor", "justice" ],
+    "parameter": "BEST_VIRTUE"
+  },
+  {
+    "maps": [
+      { "source": "FAVORITE_NUMBER > 99", "parameter": "GT100", "type": "boolean" },
+      { "source": "FAVORITE_NUMBER * 2", "parameter": "TWOX", "type": "integer" }
+    ]
+  },
+  { "review": "questions" }
+]
 
-const questioner = new Questioner({ interrogationBundle })
+const questioner = new Questioner({ interactions })
 await questioner.question()
 
 console.log(`Favorite color: ${questioner.get('FAVORITE_COLOR')}`)
