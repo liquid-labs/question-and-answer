@@ -268,8 +268,6 @@ describe('Questioner - QnA flow', () => {
       /does not define a 'parameter'/,
     ],
   ])('Will raise an exception on %s.', (desc, ib, exceptionRe) => {
-    expect(() => new Questioner({ interactions : ib })).toThrow(
-      exceptionRe
-    )
+    expect(() => new Questioner({ interactions : ib })).toThrow(exceptionRe)
   })
 })

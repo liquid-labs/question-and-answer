@@ -557,8 +557,9 @@ const Questioner = class {
           throw new ArgumentInvalidError({
             endpointType : 'configuration',
             argumentName : 'interactions',
-            issue        : 'one of the \'mapping\' actions fails to specify a \'parameter\'',
-            status       : 500,
+            issue :
+              "one of the 'mapping' actions fails to specify a 'parameter'",
+            status : 500,
           })
         }
         if (source === undefined && value === undefined) {

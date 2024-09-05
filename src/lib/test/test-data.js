@@ -1,7 +1,7 @@
 const WHATS_YOUR_FAVORITE_INT = "What's your favorite int?"
 const simpleIntQuestionIB = [
-    { prompt : WHATS_YOUR_FAVORITE_INT, parameter : 'FAVE_INT', type : 'int' },
-  ]
+  { prompt : WHATS_YOUR_FAVORITE_INT, parameter : 'FAVE_INT', type : 'int' },
+]
 
 const IS_THE_COMPANY_THE_CLIENT =
   'Is the Company the client? [y=client/n=contractor]'
@@ -77,7 +77,10 @@ const noQuestionParameterIB = [{ prompt : 'hey' }]
 
 const statementIB = [{ statement : 'Hi!' }]
 
-const conditionStatementIB = [{ statement : 'Hi!', condition : 'false' }, { statement : 'Bye!' }]
+const conditionStatementIB = [
+  { statement : 'Hi!', condition : 'false' },
+  { statement : 'Bye!' },
+]
 
 export {
   WHATS_YOUR_FAVORITE_INT,
