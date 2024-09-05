@@ -259,15 +259,4 @@ describe('Questioner - QnA flow', () => {
     })
     await questioner.question()
   })
-
-  test.each([
-    ['an invalid parameter type', badParameterIB, /invalid parameter type/i],
-    [
-      "no 'parameter' for question",
-      noQuestionParameterIB,
-      /does not define a 'parameter'/,
-    ],
-  ])('Will raise an exception on %s.', (desc, ib, exceptionRe) => {
-    expect(() => new Questioner({ interactions : ib })).toThrow(exceptionRe)
-  })
 })

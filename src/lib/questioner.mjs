@@ -18,6 +18,7 @@ import { getPrinter } from 'magic-print'
 import {
   ArgumentInvalidError,
   ArgumentMissingError,
+  ArgumentTypeError,
   rethrowIf
 } from 'standard-error-set'
 import { BooleanString, Integer, Numeric } from 'string-input'
@@ -114,7 +115,6 @@ const Questioner = class {
       let prompt = q.prompt
       let defaultI
       let hint = ''
-      console.error('defaultValue:', defaultValue, 'q.options:', q.options, 'type:', type) // DEBUG
       if (q.options === undefined) {
         if (prompt.match(/\[[^]+\] *$/m)) {
           // do we already have a hint?
@@ -142,15 +142,10 @@ const Questioner = class {
         const cliOptions = q.options.map((o, i) => i + 1 + ') ' + o)
         prompt += columns(cliOptions, { width : this.#output.width }) + '\n'
         if (defaultValue !== undefined) {
-          // defaultI is 1-indexed
+          // defaultI is 1-indexed; the default has already been validated as a valid option
           defaultI = q.options.indexOf(defaultValue) + 1
-          if (defaultI === 0) {
-            delete q.default
-          }
-          else {
-            defaultI += '' // processing expects a string
-            prompt += '[' + defaultValue + '] '
-          }
+          defaultI += '' // processing expects a string
+          prompt += '[' + defaultValue + '] '
         }
       }
 
@@ -304,6 +299,7 @@ const Questioner = class {
             endpointType : 'input',
             argumentName : action.parameter,
             issue,
+            satus: 500,
           })
         }
         this.#addResult({ source : action, value })
@@ -604,6 +600,7 @@ const Questioner = class {
             status       : 500,
           })
         }
+        
         if (
           action.type !== undefined
           && typeof action.type === 'string'
@@ -630,7 +627,26 @@ const Questioner = class {
           })
         }
       }
-    })
+
+      if (action.options !== undefined) {
+        const { default: defaultValue, options } = action
+        if (!Array.isArray(options)) {
+          throw new ArgumentTypeError({
+            argumentName: "interactions' 'options",
+            issue: "'options' must be an array",
+            status: 500,
+          })
+        }
+        else if (defaultValue !== undefined && options.indexOf(defaultValue) === -1) {
+          throw new ArgumentInvalidError({
+            argumentName : "interactions' 'default",
+            argumentValue: defaultValue,
+            issue : 'is not any of the specified options',
+            status: 500,
+          })
+        }
+      }
+    }) // foreach interaction
   }
 
   #write({ options, text }) {

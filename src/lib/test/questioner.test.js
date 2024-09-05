@@ -2,14 +2,16 @@
 import * as readline from 'node:readline'
 
 import {
+  DO_YOU_LIKE_MILK,
+  IS_THIS_THE_END,
+  badParameterIB,
+  conditionalQuestionIB,
+  conditionStatementIB,
   cookieParameterIB,
+  noQuestionParameterIB,
   simpleIB,
   simpleMapIB,
   sourceMappingIB,
-  DO_YOU_LIKE_MILK,
-  IS_THIS_THE_END,
-  conditionalQuestionIB,
-  conditionStatementIB,
   statementIB
 } from './test-data'
 import { Questioner, ANSWERED, CONDITION_SKIPPED } from '../questioner'
@@ -331,13 +333,32 @@ describe('Questioner', () => {
     test.each([
       [true, 'bool', /\[Y\/n\|-\]/],
       [false, 'bool', /\[y\/N\|-\]/],
-    ])("Default '%s' type '%s' prompt matches '%p'", async (defaultValue, type, matches) => {
+    ])("default '%s' type '%s' prompt matches '%p'", async (defaultValue, type, matches) => {
       const interactions = [ { prompt : 'Q', parameter : 'V', type, default : defaultValue }]
 
       readline.createInterface.mockImplementation(() => ({
         [Symbol.asyncIterator] : () => ({
           next : async () => {
             expect(stringOut.string.trim()).toMatch(matches)
+
+            return { value : '' }
+          },
+        }),
+        close : () => undefined,
+      }))
+
+      const questioner = new Questioner({ interactions, output })
+
+      await questioner.question()
+    })
+
+    test('displays default option value', async () => {
+      const interactions = [ { prompt : 'Q', parameter : 'V', options: ['foo', 'bar'], default : 'foo' }]
+
+      readline.createInterface.mockImplementation(() => ({
+        [Symbol.asyncIterator] : () => ({
+          next : async () => {
+            expect(stringOut.string.trim()).toMatch(/\[foo\]/m)
 
             return { value : '' }
           },
@@ -690,4 +711,20 @@ describe('Questioner', () => {
       expect(questioner.get('IS_CLIENT')).toBe(expected)
     })
   })
+
+  const badDefaultOptions = [
+    { prompt: 'Q', options: ['foo', 'bar'], default: 'baz', parameter: 'V' }
+  ]
+
+  test.each([
+    ['an invalid parameter type', badParameterIB, /invalid parameter type/i],
+    [
+      "no 'parameter' for question",
+      noQuestionParameterIB,
+      /does not define a 'parameter'/,
+    ],
+    ['bad options type', [{ prompt: 'Q', options: 'blah', parameter: 'V' }], /'options' must be an array/],
+    ['default does not match options', badDefaultOptions, /is not any of the specified options/],
+  ])('Raises exception on verifying interactions with %s.', (desc, ib, exceptionRe) =>
+    expect(() => new Questioner({ interactions : ib })).toThrow(exceptionRe))
 })
