@@ -292,14 +292,16 @@ describe('Questioner', () => {
     })
   })
 
-  describe('Literal default values', () => {
+  describe('Defaults', () => {
     test.each([
       [true, 'boolean', true],
-      [true, 'bool', true],
+      ['true', 'boolean', true],
+      [false, 'bool', false],
+      ['false', 'bool', false],
       [5, 'integer', 5],
       [5.5, 'float', 5.5],
       [6.6, 'numeric', 6.6],
-    ])("Default '%s' type '%s' -> %p", async (defaultValue, type, expected) => {
+    ])("literal default '%s' type '%s' -> %p", async (defaultValue, type, expected) => {
       const ib = structuredClone(simpleIB)
       ib[0].type = type
       ib[0].default = defaultValue
@@ -324,6 +326,28 @@ describe('Questioner', () => {
       await questioner.question()
 
       expect(questioner.get('IS_CLIENT')).toBe(expected)
+    })
+
+    test.each([
+      [true, 'bool', /\[Y\/n\|-\]/],
+      [false, 'bool', /\[y\/N\|-\]/],
+    ])("Default '%s' type '%s' prompt matches '%p'", async (defaultValue, type, matches) => {
+      const interactions = [ { prompt : 'Q', parameter : 'V', type, default : defaultValue }]
+
+      readline.createInterface.mockImplementation(() => ({
+        [Symbol.asyncIterator] : () => ({
+          next : async () => {
+            expect(stringOut.string.trim()).toMatch(matches)
+
+            return { value : '' }
+          },
+        }),
+        close : () => undefined,
+      }))
+
+      const questioner = new Questioner({ interactions, output })
+
+      await questioner.question()
     })
   })
 

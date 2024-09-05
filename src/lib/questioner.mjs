@@ -107,11 +107,14 @@ const Questioner = class {
     try {
       const type = translateType(q.type)
       // the previous answer, if any, becomes the new default
-      const defaultValue = q.rawAnswer || q.default
+      const defaultValue = Object.hasOwn(q, 'rawAnswer')
+        ? q.rawAnswer
+        : q.default
 
       let prompt = q.prompt
       let defaultI
       let hint = ''
+      console.error('defaultValue:', defaultValue, 'q.options:', q.options, 'type:', type) // DEBUG
       if (q.options === undefined) {
         if (prompt.match(/\[[^]+\] *$/m)) {
           // do we already have a hint?
@@ -173,7 +176,11 @@ const Questioner = class {
         else {
           // we change the default to a string so that we can still process the constraints using the 'string-input'
           // style type functions which expect a string input.
-          answer = (defaultI || defaultValue || '').toString()
+          answer = (defaultI !== undefined
+            ? defaultI
+            : defaultValue !== undefined
+              ? defaultValue
+              : '').toString()
         }
       }
       q.rawAnswer = answer.toString()
