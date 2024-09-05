@@ -6,10 +6,10 @@
  * ## Developer notes
  *
  * We're not strictly enforcing parameter types in-so-far as action defined parameters `value`, `source`, `elseValue`
- * and `elseSource` are essentialy "trusted" to be of the proper type, though we do  but we should check and coerce
+ * and `elseSource` are essentially "trusted" to be of the proper type, though we do  but we should check and coerce
  * string results (from the values). Also, why not have `evalString` as an option from condition eval? E.g., `'' ||
  * 'Larry'` is a valid expression. (If we do this, it might make sense to separate out the 'safe expression' testing
- * to be distinct based on the type of item; e.g., '+' and '||' are valid with strings, but '%' is just non-sensical.)
+ * to be distinct based on the type of item; e.g., '+' and '||' are valid with strings, but '%' is just nonsensical.)
  */
 import * as readline from 'node:readline'
 
