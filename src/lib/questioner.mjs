@@ -178,7 +178,9 @@ const Questioner = class {
               : '').toString()
         }
       }
-      q.rawAnswer = answer.toString()
+      if (answer !== undefined) {
+        q.rawAnswer = answer.toString()
+      }
 
       // if the user defines a separator, it may contain RE special characters we need to escape
       const separator =
