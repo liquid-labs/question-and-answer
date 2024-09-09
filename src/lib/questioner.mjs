@@ -102,8 +102,8 @@ const Questioner = class {
     const rl = readline.createInterface({
       input    : this.#input,
       output   : this.#output,
-      terminal : false,
-    }) // TODO: why is terminal false?
+      terminal : false, // TODO: why is terminal false?
+    })
 
     try {
       const type = translateType(q.type)
@@ -197,18 +197,6 @@ const Questioner = class {
         }
       }*/
 
-      // if the user defines a separator, it may contain RE special characters we need to escape
-      const separator =
-        q.separator?.replaceAll(
-          /(\.|\+|\*|\?|\^|\$|\||\(|\)|\{|\}|\[|\]|\\)/g,
-          '\\$1'
-        ) || ','
-      // TODO: make this conditional on multi-value answers
-      const splitAnswers =
-        q.multiValue === true
-          ? answer.split(new RegExp(`\\s*${separator}\\s*`))
-          : [answer]
-
       const reAskQuestion = async (issue) => {
         const message = `<warn>${issue}<rst>\n`
         this.#write({ options : q.outputOptions, text : message })
@@ -217,47 +205,70 @@ const Questioner = class {
       }
 
       const values = []
-      for (const anAnswer of splitAnswers) {
-        // TODO: default should be handled separate/before multi-value question. You can't answer a multi-value with a 
-        // default not a default; only full default or fully specified answer
-        if (anAnswer === '') {
-          if (defaultValue !== undefined) {
-            values.push(defaultValue)
-          }
-          else { // there is no answer and no default value
-            return await reAskQuestion('No default defined. Please provide a valid answer.')
-          }
-        }
-        else if (q.options === undefined) {
-          const [value, issue] = verifyAnswerForm({
-            ...q,
-            type,
-            input : anAnswer,
-          })
-          if (issue === undefined) {
-            values.push(value)
+      const multiErrorMessage = (leadIn) => 
+        `${leadIn} Please enter a number between 1 and ${q.options.length}.`
+
+      if (answer === '') {
+        if (defaultValue !== undefined) {
+          if (q.multiValue === true && Array.isArray(defaultValue) === true) {
+            values.push(...defaultValue)
           }
           else {
-            delete q.rawAnswer
-            return await reAskQuestion(issue)
+            values.push(defaultValue)
           }
         }
-        else { 
-          // it's an options question
-          let [selectionI, issue] = verifyAnswerForm({ 
-            type: Integer, 
-            input: anAnswer,
-            required: true,
-            max: q.options.length,
-            min: q.required === true ? 1 : 0,
-            message: `Invalid selection. Please enter a number between 1 and ${q.options.length}.`,
-          })
-          if (issue !== undefined) {
-            delete q.rawAnswer
-            return await reAskQuestion(issue)
-          } // else continue
-          const value = q.options[selectionI - 1]
-          values.push(value)
+        else { // there is no answer and no default value
+          const message = q.multiValue === true
+            ? multiErrorMessage('No default defined.')
+            : 'No default defined. Please provide a valid answer.'
+          return await reAskQuestion(message)
+        }
+      }
+      else {
+        // if the user defines a separator, it may contain RE special characters we need to escape
+        const separator =
+          q.separator?.replaceAll(
+            /(\.|\+|\*|\?|\^|\$|\||\(|\)|\{|\}|\[|\]|\\)/g,
+            '\\$1'
+          ) || ','
+        // TODO: make this conditional on multi-value answers
+        const splitAnswers =
+          q.multiValue === true
+            ? answer.split(new RegExp(`\\s*${separator}\\s*`))
+            : [answer]
+
+        for (const anAnswer of splitAnswers) {
+          if (q.options === undefined) {
+            const [value, issue] = verifyAnswerForm({
+              ...q,
+              type,
+              input : anAnswer,
+            })
+            if (issue === undefined) {
+              values.push(value)
+            }
+            else {
+              delete q.rawAnswer
+              return await reAskQuestion(issue)
+            }
+          }
+          else { 
+            // it's an options question
+            let [selectionI, issue] = verifyAnswerForm({ 
+              type: Integer, 
+              input: anAnswer,
+              required: true,
+              max: q.options.length,
+              min: q.required === true ? 1 : 0,
+              message: multiErrorMessage('Invalid selection.'),
+            })
+            if (issue !== undefined) {
+              delete q.rawAnswer
+              return await reAskQuestion(issue)
+            } // else continue
+            const value = q.options[selectionI - 1]
+            values.push(value)
+          }
         }
       }
 
