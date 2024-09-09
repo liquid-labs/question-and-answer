@@ -355,12 +355,20 @@ describe('Questioner', () => {
     test('displays default option value', async () => {
       const interactions = [ { prompt : 'Q', parameter : 'V', options: ['foo', 'bar'], default : 'foo' }]
 
+      let readCount = 0
       readline.createInterface.mockImplementation(() => ({
         [Symbol.asyncIterator] : () => ({
           next : async () => {
-            expect(stringOut.string.trim()).toMatch(/\[foo\]/m)
+            readCount += 1
+            if (readCount === 1) {
+              expect(stringOut.string.trim()).toMatch(/\[foo\]/m)
+              stringOut.reset()
 
-            return { value : '' }
+              return { value : '' }
+            }
+            else {
+              throw new Error('Unexpected read; output:', stringOut.string)
+            }
           },
         }),
         close : () => undefined,
@@ -369,6 +377,7 @@ describe('Questioner', () => {
       const questioner = new Questioner({ interactions, output })
 
       await questioner.question()
+      expect(questioner.get('V')).toBe('foo')
     })
   })
 
@@ -495,11 +504,11 @@ describe('Questioner', () => {
     test.each([
       // minLength
       [
-        '',
+        'a',
         'string',
         'minLength',
-        1,
-        /must be at least 1 characters long\./,
+        2,
+        /must be at least 2 characters long\./,
         'blah',
       ],
       // oneOf (singular)
@@ -684,7 +693,7 @@ describe('Questioner', () => {
     })
   })
 
-  describe('validation', () => {
+  describe('Validation', () => {
     test.each([
       ['int', '1', 1],
       [types.Integer, '-2', -2],
@@ -710,21 +719,21 @@ describe('Questioner', () => {
 
       expect(questioner.get('IS_CLIENT')).toBe(expected)
     })
+  
+    const badDefaultOptions = [
+      { prompt: 'Q', options: ['foo', 'bar'], default: 'baz', parameter: 'V' }
+    ]
+
+    test.each([
+      ['an invalid parameter type', badParameterIB, /invalid parameter type/i],
+      [
+        "no 'parameter' for question",
+        noQuestionParameterIB,
+        /does not define a 'parameter'/,
+      ],
+      ['bad options type', [{ prompt: 'Q', options: 'blah', parameter: 'V' }], /'options' must be an array/],
+      ['default does not match options', badDefaultOptions, /is not any of the specified options/],
+    ])('Raises exception on verifying interactions with %s.', (desc, ib, exceptionRe) =>
+      expect(() => new Questioner({ interactions : ib })).toThrow(exceptionRe))
   })
-
-  const badDefaultOptions = [
-    { prompt: 'Q', options: ['foo', 'bar'], default: 'baz', parameter: 'V' }
-  ]
-
-  test.each([
-    ['an invalid parameter type', badParameterIB, /invalid parameter type/i],
-    [
-      "no 'parameter' for question",
-      noQuestionParameterIB,
-      /does not define a 'parameter'/,
-    ],
-    ['bad options type', [{ prompt: 'Q', options: 'blah', parameter: 'V' }], /'options' must be an array/],
-    ['default does not match options', badDefaultOptions, /is not any of the specified options/],
-  ])('Raises exception on verifying interactions with %s.', (desc, ib, exceptionRe) =>
-    expect(() => new Questioner({ interactions : ib })).toThrow(exceptionRe))
 })

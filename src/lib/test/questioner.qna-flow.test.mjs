@@ -259,4 +259,101 @@ describe('Questioner - QnA flow', () => {
     })
     await questioner.question()
   })
+
+  test('Reset required free-form answer after bad answer and then accept default', async () => {
+    const interactions = [{ prompt: 'Q', parameter: 'V', default: 100, type: 'int', required : true }]
+
+    let readCount = 0
+    readline.createInterface.mockImplementation(() => ({
+      [Symbol.asyncIterator] : () => ({
+        next : async () => {
+
+          readCount += 1
+          if (readCount === 1) {
+            expect(stringOut.string).toBe('\nQ\n[100|-]')
+            stringOut.reset()
+
+            return { value : 'foo' }
+          }
+          else if (readCount === 2) {
+            expect(stringOut.string.trim()).toMatch(
+              /'foo' does not appear to be an integer\.(?:.|\n)*?\[100\|-\]/m
+            )
+            stringOut.reset()
+
+            return { value : '-' }
+          }
+          else if (readCount === 3) {
+            expect(stringOut.string.trim()).toMatch(/'V' is 'undefined'/m)
+            stringOut.reset()
+
+            return { value : '' }
+          }
+          else {
+            throw new Error('Unexpected read')
+          }
+        },
+      }),
+      close : () => undefined,
+    }))
+
+    const questioner = new Questioner({ interactions, output })
+    await questioner.question()
+
+    expect(questioner.get('V')).toBe(100)
+  })
+
+  test('Clear option question after rejecting review', async () => {
+    const interactions = [{ prompt: 'Q', parameter: 'V', options: [100,200], default: 200, type: 'int' }, { review : 'questions'}]
+
+    const expectedQuestion = (defaultValue) => 
+      `\nQ\n[${defaultValue}]\n\n1) 100\n2) 200\n`
+
+    let readCount = 0
+    readline.createInterface.mockImplementation(() => ({
+      [Symbol.asyncIterator] : () => ({
+        next : async () => {
+
+          readCount += 1
+          if (readCount === 1) {
+            expect(stringOut.string).toBe(expectedQuestion('200'))
+            stringOut.reset()
+
+            return { value : '1' }
+          }
+          else if (readCount === 2) {
+            expect(stringOut.string.trim()).toMatch(
+              /Review 1 answer:(?:.|\n)*?\[.*?V.*?\]:.*100/m // the 'extra' .*?'s are for color codes
+            )
+            stringOut.reset()
+
+            return { value : 'n' }
+          }
+          else if (readCount === 3) {
+            expect(stringOut.string).toBe(expectedQuestion('100'))
+            stringOut.reset()
+
+            return { value : '0' }
+          }
+          else if (readCount === 4) {
+            expect(stringOut.string.trim()).toMatch(
+              /Review 1 answer:(?:.|\n)*?\[.*?V.*?\]:.*undefined/m // the 'extra' .*?'s are for color codes
+            )
+            stringOut.reset()
+
+            return { value : 'y' }
+          }
+          else {
+            throw new Error('Unexpected read')
+          }
+        },
+      }),
+      close : () => undefined,
+    }))
+
+    const questioner = new Questioner({ interactions, output })
+    await questioner.question()
+
+    expect(questioner.get('V')).toBe(undefined)
+  })
 })

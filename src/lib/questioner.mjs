@@ -108,9 +108,26 @@ const Questioner = class {
     try {
       const type = translateType(q.type)
       // the previous answer, if any, becomes the new default
-      const defaultValue = Object.hasOwn(q, 'rawAnswer')
-        ? q.rawAnswer
-        : q.default
+      let defaultValue
+      if (q.options === undefined) {
+        defaultValue = Object.hasOwn(q, 'rawAnswer')
+          ? q.rawAnswer
+          : q.default
+      }
+      else if (Object.hasOwn(q, 'rawAnswer')) {
+        // the raw answer has already been validated on the previous go around, so we can trust it
+        const selectionI = parseInt(q.rawAnswer)
+        defaultValue = q.options[selectionI - 1]
+      }
+      else {
+        defaultValue = q.default
+      }
+      if (typeof defaultValue === 'string') {
+        const type = translateType(q.type);
+        // TODO: this won't work with multivalue actions and multivalue defaults...
+        // default values should have already been validated
+        ([defaultValue] = verifyAnswerForm({ ...q, input: defaultValue, type }))
+      }
 
       let prompt = q.prompt
       let defaultI
@@ -139,14 +156,12 @@ const Questioner = class {
       else {
         // the question has defined options
         prompt += '\n'
+        if (defaultValue !== undefined) {
+          prompt += '[' + defaultValue + ']\n'
+        }
+        prompt += '\n'
         const cliOptions = q.options.map((o, i) => i + 1 + ') ' + o)
         prompt += columns(cliOptions, { width : this.#output.width }) + '\n'
-        if (defaultValue !== undefined) {
-          // defaultI is 1-indexed; the default has already been validated as a valid option
-          defaultI = q.options.indexOf(defaultValue) + 1
-          defaultI += '' // processing expects a string
-          prompt += '[' + defaultValue + '] '
-        }
       }
 
       if (q.multiValue === true) {
@@ -162,8 +177,11 @@ const Questioner = class {
       let answer = (await it.next()).value.trim() || ''
       if (answer === '-') {
         answer = undefined
-        delete q.default
+        delete q.rawAnswer
       }
+      else {
+        q.rawAnswer = answer.toString()
+      }/*
       else if (answer === '') {
         if (defaultI === 0) {
           answer = undefined
@@ -177,10 +195,7 @@ const Questioner = class {
               ? defaultValue
               : '').toString()
         }
-      }
-      if (answer !== undefined) {
-        q.rawAnswer = answer.toString()
-      }
+      }*/
 
       // if the user defines a separator, it may contain RE special characters we need to escape
       const separator =
@@ -188,6 +203,7 @@ const Questioner = class {
           /(\.|\+|\*|\?|\^|\$|\||\(|\)|\{|\}|\[|\]|\\)/g,
           '\\$1'
         ) || ','
+      // TODO: make this conditional on multi-value answers
       const splitAnswers =
         q.multiValue === true
           ? answer.split(new RegExp(`\\s*${separator}\\s*`))
@@ -202,7 +218,17 @@ const Questioner = class {
 
       const values = []
       for (const anAnswer of splitAnswers) {
-        if (q.options === undefined) {
+        // TODO: default should be handled separate/before multi-value question. You can't answer a multi-value with a 
+        // default not a default; only full default or fully specified answer
+        if (anAnswer === '') {
+          if (defaultValue !== undefined) {
+            values.push(defaultValue)
+          }
+          else { // there is no answer and no default value
+            return await reAskQuestion('No default defined. Please provide a valid answer.')
+          }
+        }
+        else if (q.options === undefined) {
           const [value, issue] = verifyAnswerForm({
             ...q,
             type,
@@ -212,24 +238,26 @@ const Questioner = class {
             values.push(value)
           }
           else {
-            await reAskQuestion(issue)
+            delete q.rawAnswer
+            return await reAskQuestion(issue)
           }
         }
-        else {
+        else { 
           // it's an options question
-          try {
-            const selectionI = Integer(anAnswer, {
-              max : q.options.length,
-              min : 1,
-            })
-            const value = q.options[selectionI - 1]
-            values.push(value)
-          }
-          catch (e) {
-            await reAskQuestion(
-              `Please enter a number between 1 and ${q.options.length}.`
-            )
-          }
+          let [selectionI, issue] = verifyAnswerForm({ 
+            type: Integer, 
+            input: anAnswer,
+            required: true,
+            max: q.options.length,
+            min: q.required === true ? 1 : 0,
+            message: `Invalid selection. Please enter a number between 1 and ${q.options.length}.`,
+          })
+          if (issue !== undefined) {
+            delete q.rawAnswer
+            return await reAskQuestion(issue)
+          } // else continue
+          const value = q.options[selectionI - 1]
+          values.push(value)
         }
       }
 
@@ -328,6 +356,7 @@ const Questioner = class {
           // it's a review
           const [result, included] = await this.#processReview(action)
           if (result === true && action.parameter !== undefined) {
+            // successful reviews can set a value
             this.#addResult({ source : action, value : result })
           }
           else if (result === false) {
@@ -337,8 +366,8 @@ const Questioner = class {
               return acc
             }, {})
             this.#results = this.#results.filter((r) => !(r.parameter in toNix))
-            await this.#processActions()
-            break
+            // TODO: shouldn't this only re-process the included actions?
+            return await this.#processActions()
           }
         }
         else {
@@ -495,7 +524,8 @@ const Questioner = class {
       reviewText += `[<bold>${action.parameter}<rst>]: <em>${this.get(action.parameter)}<rst>\n`
     }
 
-    const header = `<h2>Review ${included.length} ${reviewType === 'all' ? 'values' : 'answers'}:<rst>`
+    const sOrNot = included.length > 1 ? 's' : ''
+    const header = `<h2>Review ${included.length} ${reviewType === 'all' ? 'value' : 'answer'}${sOrNot}:<rst>`
 
     this.#write({
       options : { hangingIndent : 2 },
@@ -663,6 +693,7 @@ const Questioner = class {
 
 const verifyAnswerForm = ({ type, input, ...paramOptions }) => {
   const options = Object.assign({ name : paramOptions.parameter }, paramOptions)
+  delete options.parameter
   try {
     const value = type(input, options)
 
