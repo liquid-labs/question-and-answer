@@ -157,40 +157,6 @@ describe('Questioner - QnA flow', () => {
     }
   )
 
-  test("when question is condition-skipped, uses 'elseValue' if present", (done) => {
-    const interactions = [
-      { prompt : 'Q', parameter : 'V', type : 'bool', condition: 'C', elseValue: false },
-      {
-        condition : 'V',
-        maps      : [{ parameter : 'X', value : 'a' }],
-      },
-      {
-        condition : '!V',
-        maps      : [{ parameter : 'X', value : 'b' }],
-      },
-    ]
-    const initialParameters = { C : false }
-
-    const questioner = new Questioner({ initialParameters, interactions })
-
-    questioner
-      .question()
-      .then(() => {
-        try {
-          const result = questioner.getResult('V')
-          expect(result.value).toBe(false)
-          expect(result.disposition).toBe(CONDITION_SKIPPED)
-          expect(questioner.get('X')).toBe('b')
-        }
-        finally {
-          done()
-        }
-      })
-      .catch((e) => {
-        throw e
-      })
-  })
-
   test('Will re-ask questions when answer form invalid', async () => {
     let readCount = 0
     readline.createInterface.mockImplementation(() => ({

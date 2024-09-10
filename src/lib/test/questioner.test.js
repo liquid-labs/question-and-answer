@@ -243,7 +243,53 @@ describe('Questioner', () => {
       await questioner.question()
     })
 
+    test("when question is condition-skipped, uses 'elseValue' if present (literal 'elseValue')", async () => {
+      const interactions = [
+        { prompt : 'Q', parameter : 'V', type : 'bool', condition: 'C', elseValue: false },
+        {
+          condition : 'V',
+          maps      : [{ parameter : 'X', value : 'a' }],
+        },
+        {
+          condition : '!V',
+          maps      : [{ parameter : 'X', value : 'b' }],
+        },
+      ]
+      const initialParameters = { C : false }
+
+      const questioner = new Questioner({ initialParameters, interactions })
+
+      await questioner.question()
+
+      const result = questioner.getResult('V')
+            expect(result.value).toBe(false)
+            expect(result.disposition).toBe(CONDITION_SKIPPED)
+            expect(questioner.get('X')).toBe('b')
+    })
+
     test("when question is condition-skipped, uses 'elseSource' if present", async () => {
+      const interactions = [
+        { prompt : 'Q', parameter : 'V', type : 'bool', condition: 'C', elseSource: 'BAR || BAZ' },
+        {
+          condition : 'BAZ',
+          maps      : [{ parameter : 'X', value : 'a' }],
+        },
+        {
+          condition : '!V',
+          maps      : [{ parameter : 'X', value : 'b' }],
+        },
+      ]
+      const initialParameters = { C : false, BAR : true, BAZ : false }
+
+      const questioner = new Questioner({ initialParameters, interactions })
+
+      await questioner.question()
+
+      const vResult = questioner.getResult('V')
+      expect(vResult.value).toBe(true)
+      expect(vResult.disposition).toBe(CONDITION_SKIPPED)
+      expect(questioner.get('X')).toBe(undefined)
+/*
       const ib = structuredClone(simpleMapIB)
       ib[0].condition = 'FOO'
       ib[0].elseSource = 'BAR || BAZ'
@@ -262,6 +308,40 @@ describe('Questioner', () => {
         CONDITION_SKIPPED
       )
       expect(questioner.get('ORG_COMMON_NAME')).toBe(undefined) // this is the mapped value
+    })
+
+    test("when question is condition-skipped, uses 'elseValue' if present", (done) => {
+      const interactions = [
+        { prompt : 'Q', parameter : 'V', type : 'bool', condition: 'C', elseValue: false },
+        {
+          condition : 'V',
+          maps      : [{ parameter : 'X', value : 'a' }],
+        },
+        {
+          condition : '!V',
+          maps      : [{ parameter : 'X', value : 'b' }],
+        },
+      ]
+      const initialParameters = { C : false }
+
+      const questioner = new Questioner({ initialParameters, interactions })
+
+      questioner
+        .question()
+        .then(() => {
+          try {
+            const result = questioner.getResult('V')
+            expect(result.value).toBe(false)
+            expect(result.disposition).toBe(CONDITION_SKIPPED)
+            expect(questioner.get('X')).toBe('b')
+          }
+          finally {
+            done()
+          }
+        })
+        .catch((e) => {
+          throw e
+        })*/
     })
   })
 

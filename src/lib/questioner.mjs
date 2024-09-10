@@ -312,6 +312,10 @@ const Questioner = class {
             ...action,
             input : evalResult.toString(),
             type,
+            _throw : true,
+            // these are for the ArgumentInvalidError, if thrown
+            endpointType: "action 'elseSource' for",
+            status: 500,
           })
           this.#addResult({ action : action, value })
         }
@@ -373,7 +377,7 @@ const Questioner = class {
         else if (action.review !== undefined) {
           // it's a review
           const [result, included] = await this.#processReview(action)
-          if (result === true && action.parameter !== undefined) {
+          if (result === true) {
             // successful reviews can set a value
             this.#addResult({ action : action, value : result })
           }
