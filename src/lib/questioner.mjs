@@ -81,22 +81,33 @@ const Questioner = class {
     }
   }
 
-  #addResult({ source, value }) {
-    if (source.parameter === undefined) {
+  /**
+   * Adds a resolved action result to our list if results. A "result" means a parameter value has been resolved, either 
+   * by an answer, an initial parameter, a condition setting, or a mapping. Note __only `actions` with a parameter 
+   * value are saved__. I.e., to avoid having to perform "if parameter set" tests at multiple call points, we do it 
+   * here. Actions without parameters are, for example, conditioned skipped maps.
+   * 
+   * @param {object} options - The inputs.
+   * @param {object} options.action - The 'action' to (potentially) save as a result.
+   * @param {*} options.value - The value the action resolved to.
+   * @private
+   */
+  #addResult({ action, value }) {
+    if (action.parameter === undefined) {
       return
     }
     // We want 'value' last because the 'value' attached to the source is always a string, while the final value will
     // have been converted by type.
 
-    const result = Object.assign(ibClone(source), { value })
+    const result = Object.assign(ibClone(action), { value })
     // Let's tidy up the results with some info that is more of internal use and less relevant for reporting.
     delete result.mappings
     // TODO: add option to retain these?
     delete result.elseValue
     delete result.elseSource
-    source.value = value
+    result.value = value
 
-    this.#results.push(source)
+    this.#results.push(result)
   }
 
   async #askQuestion(q) {
@@ -264,7 +275,7 @@ const Questioner = class {
       // if we get here, then the answers are good
       q.disposition = ANSWERED
       const value = q.multiValue === true ? values : values[0]
-      this.#addResult({ source : q, value })
+      this.#addResult({ action : q, value })
     }
     finally {
       // try for rl
@@ -289,7 +300,7 @@ const Questioner = class {
             typeof elseValue === 'string'
               ? verifyAnswerForm({ ...action, input : elseValue, type })
               : elseValue
-          this.#addResult({ source : action, value })
+          this.#addResult({ action : action, value })
         }
         else if (action.elseSource !== undefined) {
           const type = translateType(action.type)
@@ -302,10 +313,10 @@ const Questioner = class {
             input : evalResult.toString(),
             type,
           })
-          this.#addResult({ source : action, value })
+          this.#addResult({ action : action, value })
         }
         else {
-          this.#addResult({ source : action })
+          this.#addResult({ action : action })
         }
         continue
       }
@@ -339,7 +350,7 @@ const Questioner = class {
         else {
           value = input
         }
-        this.#addResult({ source : action, value })
+        this.#addResult({ action : action, value })
       }
       else {
         // We want to put a newline between items, but if the previous was a question, we already have a newline from
@@ -364,7 +375,7 @@ const Questioner = class {
           const [result, included] = await this.#processReview(action)
           if (result === true && action.parameter !== undefined) {
             // successful reviews can set a value
-            this.#addResult({ source : action, value : result })
+            this.#addResult({ action : action, value : result })
           }
           else if (result === false) {
             const toNix = included.reduce((acc, i) => {
@@ -462,7 +473,7 @@ const Questioner = class {
           }
 
           value = type(value.toString())
-          this.#addResult({ source : map, value })
+          this.#addResult({ action : map, value })
         }
         else if (map.value !== undefined) {
           const [value] = verifyAnswerForm({
@@ -474,7 +485,7 @@ const Questioner = class {
             endpointType: 'mapping to parameter',
             status  : 500,
           })
-          this.#addResult({ source : map, value })
+          this.#addResult({ action : map, value })
         }
         else {
           // this should already be verified up front, but for the sake of comopletness
