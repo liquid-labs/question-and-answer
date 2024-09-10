@@ -82,6 +82,9 @@ const Questioner = class {
   }
 
   #addResult({ source, value }) {
+    if (source.parameter === undefined) {
+      return
+    }
     // We want 'value' last because the 'value' attached to the source is always a string, while the final value will
     // have been converted by type.
 
@@ -181,21 +184,7 @@ const Questioner = class {
       }
       else {
         q.rawAnswer = answer.toString()
-      }/*
-      else if (answer === '') {
-        if (defaultI === 0) {
-          answer = undefined
-        }
-        else {
-          // we change the default to a string so that we can still process the constraints using the 'string-input'
-          // style type functions which expect a string input.
-          answer = (defaultI !== undefined
-            ? defaultI
-            : defaultValue !== undefined
-              ? defaultValue
-              : '').toString()
-        }
-      }*/
+      }
 
       const reAskQuestion = async (issue) => {
         const message = `<warn>${issue}<rst>\n`
@@ -333,15 +322,22 @@ const Questioner = class {
         // this is necessary because maybe we're getting the definition as part of the parameter inputs, which could
         // just be a string
         const type = translateType(action.type)
-        const input = this.get(action.parameter).toString()
-        const [value, issue] = verifyAnswerForm({ ...action, input, type })
-        if (issue !== undefined) {
-          throw new ArgumentInvalidError({
-            endpointType : 'input',
-            argumentName : action.parameter,
-            issue,
-            satus: 500,
-          })
+        const input = this.get(action.parameter)
+        let value
+        if (typeof input === 'string') {
+          ([value] = verifyAnswerForm({ 
+            ...action,
+            input,
+            type,
+            _throw: true,
+            // options for the error, if thrown
+            endpointType: 'parameter settings',
+            hint: 'Check your initial parameters.',
+            status: 500,          
+          }))
+        }
+        else {
+          value = input
         }
         this.#addResult({ source : action, value })
       }
@@ -430,9 +426,8 @@ const Questioner = class {
   }
 
   has(parameter) {
-    return (
-      this.get(parameter) !== undefined || parameter in this.#initialParameters
-    )
+    const has = this.#results.some((r) => r.parameter === parameter) || parameter in this.#initialParameters
+    return has
   }
 
   get interactions() {
@@ -470,17 +465,15 @@ const Questioner = class {
           this.#addResult({ source : map, value })
         }
         else if (map.value !== undefined) {
-          const [value, issue] = verifyAnswerForm({
+          const [value] = verifyAnswerForm({
             input : map.value.toString(),
             ...map,
             type,
+            _throw: true,
+            // options for the ArgumentInvalidError, if thrown
+            endpointType: 'mapping to parameter',
+            status  : 500,
           })
-          if (issue !== undefined) {
-            throw new ArgumentInvalidError({
-              message : `Mapping to parameter '${map.parameter}' ${issue}.`,
-              status  : 500,
-            })
-          }
           this.#addResult({ source : map, value })
         }
         else {
@@ -702,7 +695,7 @@ const Questioner = class {
   }
 }
 
-const verifyAnswerForm = ({ type, input, ...paramOptions }) => {
+const verifyAnswerForm = ({ type, input, _throw, ...paramOptions }) => {
   const options = Object.assign({ name : paramOptions.parameter }, paramOptions)
   delete options.parameter
   try {
@@ -711,6 +704,10 @@ const verifyAnswerForm = ({ type, input, ...paramOptions }) => {
     return [value]
   }
   catch (e) {
+    if (_throw === true) {
+      throw e
+    }
+
     rethrowIf(e, { instanceOfNot : ArgumentInvalidError, statusIsNot : 400 })
 
     return [undefined, e.message]

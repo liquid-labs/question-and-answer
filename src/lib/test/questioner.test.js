@@ -303,10 +303,12 @@ describe('Questioner', () => {
       [5, 'integer', 5],
       [5.5, 'float', 5.5],
       [6.6, 'numeric', 6.6],
+      [[1,2], 'int', [1,2]]
     ])("literal default '%s' type '%s' -> %p", async (defaultValue, type, expected) => {
-      const ib = structuredClone(simpleIB)
-      ib[0].type = type
-      ib[0].default = defaultValue
+      const interactions = [{ prompt: 'Q', parameter: 'V', type, default: defaultValue }]
+      if (Array.isArray(defaultValue)) {
+        interactions[0].multiValue = true
+      }
 
       let askCount = 0
       readline.createInterface.mockImplementation(() => ({
@@ -323,11 +325,11 @@ describe('Questioner', () => {
         close : () => undefined,
       }))
 
-      const questioner = new Questioner({ interactions : ib, output })
+      const questioner = new Questioner({ interactions, output })
 
       await questioner.question()
 
-      expect(questioner.get('IS_CLIENT')).toBe(expected)
+      expect(questioner.get('V')).toEqual(expected)
     })
 
     test.each([
@@ -735,5 +737,21 @@ describe('Questioner', () => {
       ['default does not match options', badDefaultOptions, /is not any of the specified options/],
     ])('Raises exception on verifying interactions with %s.', (desc, ib, exceptionRe) =>
       expect(() => new Questioner({ interactions : ib })).toThrow(exceptionRe))
+  })
+
+  describe('Preset parameters', () => {
+    test('raises an error when invalid (initial parameters)', async () => {
+      const interactions = [{ parameter: 'V', prompt: 'Q', type: 'int' }]
+      const initialParameters = { V: 'foo' }
+      const questioner = new Questioner({ initialParameters, interactions, output })
+
+      try {
+        await questioner.question()
+        throw new Error('Did not throw when expected')
+      }
+      catch (e) {
+        expect(e.message).toMatch(/does not appear to be an integer\. Check your initial parameters./)
+      }
+    })
   })
 })

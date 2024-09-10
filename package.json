@@ -34,8 +34,8 @@
     "@liquid-labs/condition-eval": "^1.0.0-alpha.18",
     "cli-columns": "^4.0.0",
     "magic-print": "^1.0.0-alpha.18",
-    "standard-error-set": "^1.0.0-beta.1",
-    "string-input": "^1.0.0-alpha.11"
+    "standard-error-set": "^1.0.0-beta.2",
+    "string-input": "^1.0.0-alpha.12"
   },
   "devDependencies": {
     "@liquid-labs/sdlc-resource-babel-and-rollup": "^1.0.0-alpha.9",

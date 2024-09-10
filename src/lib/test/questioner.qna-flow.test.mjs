@@ -158,25 +158,29 @@ describe('Questioner - QnA flow', () => {
   )
 
   test("when question is condition-skipped, uses 'elseValue' if present", (done) => {
-    const ib = structuredClone(simpleMapIB)
-    ib[0].condition = 'FOO'
-    ib[0].elseValue = false
-    const initialParameters = { FOO : false }
+    const interactions = [
+      { prompt : 'Q', parameter : 'V', type : 'bool', condition: 'C', elseValue: false },
+      {
+        condition : 'V',
+        maps      : [{ parameter : 'X', value : 'a' }],
+      },
+      {
+        condition : '!V',
+        maps      : [{ parameter : 'X', value : 'b' }],
+      },
+    ]
+    const initialParameters = { C : false }
 
-    const questioner = new Questioner({
-      initialParameters,
-      interactions : ib,
-    })
+    const questioner = new Questioner({ initialParameters, interactions })
 
     questioner
       .question()
       .then(() => {
         try {
-          expect(questioner.get('IS_CLIENT')).toBe(false)
-          expect(questioner.getResult('IS_CLIENT').disposition).toBe(
-            CONDITION_SKIPPED
-          )
-          expect(questioner.get('ORG_COMMON_NAME')).toBe('them') // this is the mapped value
+          const result = questioner.getResult('V')
+          expect(result.value).toBe(false)
+          expect(result.disposition).toBe(CONDITION_SKIPPED)
+          expect(questioner.get('X')).toBe('b')
         }
         finally {
           done()
@@ -222,9 +226,13 @@ describe('Questioner - QnA flow', () => {
     await questioner.question()
   })
 
-  test('Will re-ask questions when answer fails validation', async () => {
-    const validationIB = structuredClone(simpleIntQuestionIB)
-    validationIB[0].validations = { 'min-length' : 2 }
+  test.each([
+    [{ type: 'int', min: 10 }, ['1', '12'], "greater than or equal to '10'", 12],
+    [{}, ['', 'foo'], 'No default defined. Please provide a valid answer', 'foo'],
+    [{ multiValue: true, options: ['a', 'b'] }, ['foo', '1'], 'Invalid selection. Please enter a number between 1 and 2', ['a']],
+  ])('R-asks after failed validation; options %p, answers: %p, err msg: %s, value: %p', async (options, answers, errMsg, expected) => {
+    const errorMatch = new RegExp(errMsg + '\\.(?:.|\n)*?Q', 'm')
+    const interactions = [{ prompt: 'Q', parameter: 'V', ...options }]
 
     let readCount = 0
     readline.createInterface.mockImplementation(() => ({
@@ -232,32 +240,29 @@ describe('Questioner - QnA flow', () => {
         next : async () => {
           readCount += 1
           if (readCount === 1) {
-            expect(stringOut.string.trim()).toBe(WHATS_YOUR_FAVORITE_INT)
+            expect(stringOut.string.trim()).toMatch(/^Q/)
             stringOut.reset()
 
-            return { value : '1' }
+            return { value : answers[0] }
           }
           else if (readCount === 2) {
-            expect(stringOut.string.trim()).toMatch(
-              /must be at least 2.+?\n+What's your/m
-            )
+            expect(stringOut.string).toMatch(errorMatch)
 
-            return { value : '12' }
+            return { value : answers[1] }
             // expect(stringOut.string.trim()).toMatch(/not a valid.+\n.+favorite int/m)
           }
           else {
             throw new Error('Unexpected read')
           }
-        },
+        }
       }),
       close : () => undefined,
     }))
 
-    const questioner = new Questioner({
-      interactions : validationIB,
-      output,
-    })
+    const questioner = new Questioner({ interactions, output })
     await questioner.question()
+
+    expect(questioner.get('V')).toEqual(expected)
   })
 
   test('Reset required free-form answer after bad answer and then accept default', async () => {
