@@ -72,7 +72,7 @@ const Questioner = class {
     this.#initialParameters = initialParameters
     this.#noSkipDefined = noSkipDefined
 
-    this.#verifyInterrogationBundle()
+    this.#verifyInteractions()
 
     let index = 0
     for (const action of this.#interactions) {
@@ -604,7 +604,7 @@ const Questioner = class {
     }, {})
   }
 
-  #verifyInterrogationBundle() {
+  #verifyInteractions() {
     const verifyMapping = ({ maps }) => {
       for (const { parameter, source, value } of maps) {
         if (parameter === undefined) {
@@ -628,16 +628,23 @@ const Questioner = class {
     }
 
     this.#interactions.forEach((action, i) => {
-      if (
-        action.prompt === undefined
-        && action.maps === undefined
-        && action.statement === undefined
-        && action.review === undefined
-      ) {
+      const actionTypes = ['prompt', 'maps', 'statement', 'review']
+      const typeCount = actionTypes.reduce((count, type) => 
+        action[type] === undefined ? count : count + 1, 0)
+
+      if (typeCount === 0) {
         throw new ArgumentInvalidError({
           endpointType : 'configuration',
           argumentName : 'interactions',
           issue        : `action ${i + 1} defines neither 'prompt', 'maps', 'statement', nor 'review'; cannot determine type`,
+          status       : 500,
+        })
+      }
+      else if (typeCount > 1) {
+        throw new ArgumentInvalidError({
+          endpointType : 'configuration',
+          argumentName : 'interactions',
+          issue        : `action ${i + 1} defines multiple action types; must define on of 'prompt', 'maps', 'statement', nor 'review'`,
           status       : 500,
         })
       }
