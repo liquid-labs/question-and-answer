@@ -438,7 +438,13 @@ const Questioner = class {
   }
 
   get interactions() {
-    return this.#interactions
+    const clone = ibClone(this.#interactions)
+    // remove internal bits
+    for (const action of clone) {
+      delete action._index
+    }
+
+    return clone
   }
 
   #processMapping(mapping) {
@@ -450,17 +456,8 @@ const Questioner = class {
         if (map.source !== undefined) {
           let value
 
-          // recall maps only support boolean and numeric types
-          if (![BooleanString, Integer, Numeric].includes(type)) {
-            throw new ArgumentInvalidError({
-              endpointType : 'configuration',
-              argumentName : 'interactions',
-              issue        : `cannot map a 'source' value to parameter '${map.parameter}' of type '${map.type || 'string'}'`,
-              hint         : "Type must be 'boolean', 'integer', or 'numeric'.",
-              status       : 500,
-            })
-          }
-          else if (map.type === BooleanString) {
+          // type validated in verifyInteractions
+          if (type === BooleanString) {
             value = this.#evalTruth(map.source)
           }
           else {
@@ -598,7 +595,7 @@ const Questioner = class {
 
   #verifyInteractions() {
     const verifyMapping = ({ maps }) => {
-      for (const { parameter, source, value } of maps) {
+      for (const { parameter, source, type, value } of maps) {
         if (parameter === undefined) {
           throw new ArgumentInvalidError({
             endpointType : 'configuration',
@@ -615,6 +612,19 @@ const Questioner = class {
             issue        : `mapping for '${parameter}' must specify one of 'source' or 'value'`,
             status       : 500,
           })
+        }
+        if (source !== undefined) {
+          const typeFunc = translateType(type)
+          // recall maps only support boolean and numeric types
+          if (![BooleanString, Integer, Numeric].includes(typeFunc)) {
+            throw new ArgumentTypeError({
+              endpointType : 'interactions',
+              argumentName : parameter,
+              receivedType: typeFunc,
+              argumentType: "bool', 'int', or 'numeric",
+              status       : 500,
+            })
+          }
         }
       }
     }

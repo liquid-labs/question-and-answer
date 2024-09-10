@@ -1,6 +1,10 @@
 /* global beforeAll beforeEach describe expect jest test */
 import * as readline from 'node:readline'
 
+import { Day, ValidatedString } from 'string-input'
+import { getPrinter, StringOut } from 'magic-print'
+import * as types from 'string-input'
+
 import {
   DO_YOU_LIKE_MILK,
   IS_THIS_THE_END,
@@ -16,9 +20,6 @@ import {
 } from './test-data'
 import { Questioner, ANSWERED, CONDITION_SKIPPED } from '../questioner'
 
-import { getPrinter, StringOut } from 'magic-print'
-import * as types from 'string-input'
-
 jest.mock('node:readline')
 
 describe('Questioner', () => {
@@ -28,6 +29,26 @@ describe('Questioner', () => {
 
   beforeEach(() => {
     stringOut.reset()
+  })
+
+  test('.interactions returns independent (cloned) interactions', () => {
+    const interactions = [ { prompt: 'Q', parameter: 'V' }]
+    const questioner = new Questioner({ interactions })
+    const interactionsCopy = questioner.interactions
+    expect(interactionsCopy).toEqual(interactions)
+    interactionsCopy[0].prompt = 'W'
+    expect(interactionsCopy).not.toEqual(interactions)
+  })
+
+  describe('interactions validation', () => {
+    test.each([
+      [undefined, ValidatedString],
+      ['string', ValidatedString],
+      [Day, Day]
+    ])("throws on invalid 'map' action source type %s", (type, expectedType) => {
+      const interactions = [{ maps: [{ parameter: 'V', source: 'BAR', type }]}]
+      expect(() => new Questioner({interactions})).toThrow(new RegExp(`is wrong type. Received type '${expectedType}'`))
+    })
   })
 
   describe('boolean questions', () => {
@@ -173,33 +194,19 @@ describe('Questioner', () => {
     test.each([
       ['bool', 'y', true],
       ['int', '1', 1],
+      ['numeric', '1.5', 1.5],
     ])(
       "maps 'source'd type %s input '%s' -> %p",
       async (type, value, expected) => {
-        const interactions = structuredClone(simpleMapIB)
-        delete interactions[1].maps[0].value
-        interactions[1].maps[0].type = type
-        interactions[1].maps[0].source = 'ENV_VAR'
-        const initialParameters = { ENV_VAR : value }
+        const interactions = [
+          { maps : [{ parameter: 'V', source: 'ENV_VAR', type }] }
+        ]
+        const initialParameters = { ENV_VAR: value }
 
-        readline.createInterface.mockImplementation(() => ({
-          [Symbol.asyncIterator] : () => ({
-            next : async () => {
-              return { value : 'yes' }
-            },
-          }),
-          close : () => undefined,
-        }))
-
-        const questioner = new Questioner({
-          interactions,
-          initialParameters,
-          output,
-        })
-
+        const questioner = new Questioner({ interactions, initialParameters })
         await questioner.question()
 
-        expect(questioner.values.ORG_COMMON_NAME).toBe(expected)
+        expect(questioner.get('V')).toBe(expected)
       }
     )
   })
@@ -775,7 +782,7 @@ describe('Questioner', () => {
     })
   })
 
-  describe('Validation', () => {
+  describe('Answer validation', () => {
     test.each([
       ['int', '1', 1],
       [types.Integer, '-2', -2],
