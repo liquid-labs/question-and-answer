@@ -374,7 +374,7 @@ const Questioner = class {
           // it's a statement
           this.#write({ options : action.outputOptions, text : action.statement })
         }
-        else if (action.review !== undefined) {
+        else { // if (action.review !== undefined) {; interactions validated, so this must be
           // it's a review
           const [result, included] = await this.#processReview(action)
           if (result === true) {
@@ -391,14 +391,6 @@ const Questioner = class {
             // TODO: shouldn't this only re-process the included actions?
             return await this.#processActions()
           }
-        }
-        else {
-          throw new ArgumentInvalidError({
-            endpointType : 'configuration',
-            argumentName : 'interactions',
-            issue        : `could not determine action type of ${action}`,
-            status       : 500,
-          })
         }
       } // else not defined skip
       first = false
