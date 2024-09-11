@@ -275,7 +275,10 @@ describe('Questioner - QnA flow', () => {
   })
 
   test('Clear option question after rejecting review', async () => {
-    const interactions = [{ prompt: 'Q', parameter: 'V', options: [100,200], default: 200, type: 'int' }, { review : 'questions'}]
+    const interactions = [
+      { prompt: 'Q', parameter: 'V', options: [100,200], default: 200, type: 'int' },
+      { review : 'questions'}
+    ]
 
     const expectedQuestion = (defaultValue) => 
       `\nQ\n[${defaultValue}]\n\n1) 100\n2) 200\n`
@@ -326,5 +329,45 @@ describe('Questioner - QnA flow', () => {
     await questioner.question()
 
     expect(questioner.get('V')).toBe(undefined)
+  })
+
+  test('Reviews only items since the last review (multiple reviews)', async () => {
+    const interactions = [
+      { prompt: 'Q1', parameter: 'V1' },
+      { review : 'questions' },
+      { prompt: 'Q2', parameter: 'V2' },
+      { review : 'questions' },
+    ]
+
+    let readCount = 0
+    readline.createInterface.mockImplementation(() => ({
+      [Symbol.asyncIterator] : () => ({
+        next : async () => {
+
+          readCount += 1
+          switch (readCount) {
+          case 1: // Q1
+            return { value : 'foo' }
+          case 2: // review 1
+            return { value : 'y' }
+          case 3: // Q2
+            stringOut.reset()
+            return { value : 'bar' }
+          case 4:
+            expect(stringOut.string).toMatch(/^Q2\n\[V2\]:.+bar:.+\n.+Verified?.+ \[y\/n\]$/)
+            return { value: 'y' }
+          default:
+            throw new Error('Unexpected read')
+          }
+        }
+      }),
+      close : () => undefined,
+    }))
+
+    const questioner = new Questioner({ interactions, output })
+    await questioner.question()
+
+    expect(questioner.get('V1')).toBe('foo')
+    expect(questioner.get('V2')).toBe('bar')
   })
 })

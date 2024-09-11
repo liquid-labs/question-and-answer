@@ -467,8 +467,8 @@ const Questioner = class {
 
           value = type(value.toString())
           this.#addResult({ action : map, value })
-        }
-        else if (map.value !== undefined) {
+        } // we are guaranteed to have either source or value by 'verifyInteractions()'
+        else { // if (map.value !== undefined) {
           const [value] = verifyAnswerForm({
             input : map.value.toString(),
             ...map,
@@ -479,12 +479,6 @@ const Questioner = class {
             status  : 500,
           })
           this.#addResult({ action : map, value })
-        }
-        else {
-          // this should already be verified up front, but for the sake of comopletness
-          throw new Error(
-            `Mapping for '${map.parameter}' must specify either 'source' or 'value'.`
-          )
         }
       })
     }
@@ -498,7 +492,7 @@ const Questioner = class {
         break
       }
       else if (action.review !== undefined) {
-        included.slice(0, included.length) // truncate
+        included.splice(0, included.length) // truncate
         continue
       }
       const result = this.#getResultByIndex(action._index)
