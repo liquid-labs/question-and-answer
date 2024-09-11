@@ -101,7 +101,6 @@ const Questioner = class {
 
     const result = Object.assign(ibClone(action), { value })
     // Let's tidy up the results with some info that is more of internal use and less relevant for reporting.
-    delete result.mappings
     // TODO: add option to retain these?
     delete result.elseValue
     delete result.elseSource
