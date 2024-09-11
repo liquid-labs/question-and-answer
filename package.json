@@ -31,7 +31,7 @@
   },
   "homepage": "https://github.com/liquid-labs/question-and-answer#readme",
   "dependencies": {
-    "@liquid-labs/condition-eval": "^1.0.0-alpha.18",
+    "@liquid-labs/condition-eval": "^1.0.0-alpha.19",
     "cli-columns": "^4.0.0",
     "magic-print": "^1.0.0-alpha.18",
     "standard-error-set": "^1.0.0-beta.2",
