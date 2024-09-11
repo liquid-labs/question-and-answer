@@ -501,7 +501,7 @@ const Questioner = class {
         && (reviewType === 'all' || action.prompt !== undefined)
         && !result?.disposition.endsWith('skipped')
 
-      if (include) {
+      if (include === true) {
         if (action.prompt !== undefined) {
           included.push(action)
         }

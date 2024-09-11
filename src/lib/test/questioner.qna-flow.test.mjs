@@ -331,6 +331,9 @@ describe('Questioner - QnA flow', () => {
     expect(questioner.get('V')).toBe(undefined)
   })
 
+  // [38;5;184m
+  const termCtrl = '(?:[^ -~]{1,2}\\[\\d{1,3}(?:;\\d{1,3};\\d{1,3})?m)+'
+
   test('Reviews only items since the last review (multiple reviews)', async () => {
     const interactions = [
       { prompt: 'Q1', parameter: 'V1' },
@@ -354,7 +357,8 @@ describe('Questioner - QnA flow', () => {
             stringOut.reset()
             return { value : 'bar' }
           case 4:
-            expect(stringOut.string).toMatch(/^Q2\n\[V2\]:.+bar:.+\n.+Verified?.+ \[y\/n\]$/)
+            const re = new RegExp(`^${termCtrl}Review[^:]+:${termCtrl}\nQ2\n\\[${termCtrl}V2${termCtrl}\\]: ${termCtrl}bar${termCtrl}\n${termCtrl}Verified\\?${termCtrl} \\[y\\/n\\]$`, 'm')
+            expect(stringOut.string).toMatch(re)
             return { value: 'y' }
           default:
             throw new Error('Unexpected read')
@@ -369,5 +373,75 @@ describe('Questioner - QnA flow', () => {
 
     expect(questioner.get('V1')).toBe('foo')
     expect(questioner.get('V2')).toBe('bar')
+  })
+
+  test("'review : questions' skips review of mapped items", async () => {
+    const interactions = [
+      { prompt: 'Q1', parameter: 'V1', type: 'int' },
+      { maps : [{ parameter: 'V2', source: 'V1 + 2', type: 'int' }]},
+      { review : 'questions' },
+    ]
+
+    let readCount = 0
+    readline.createInterface.mockImplementation(() => ({
+      [Symbol.asyncIterator] : () => ({
+        next : async () => {
+
+          readCount += 1
+          switch (readCount) {
+          case 1: // Q1
+            stringOut.reset()
+            return { value : '1' }
+          case 2: // review 1
+            expect(stringOut.string).toMatch(new RegExp(`^\n${termCtrl}Review 1[^:]+:${termCtrl}\nQ1`, 'm'))
+            return { value: 'y' }
+          default:
+            throw new Error('Unexpected read')
+          }
+        }
+      }),
+      close : () => undefined,
+    }))
+
+    const questioner = new Questioner({ interactions, output })
+    await questioner.question()
+
+    expect(questioner.get('V1')).toBe(1)
+    expect(questioner.get('V2')).toBe(3)
+  })
+
+  test("'review : all' includes review of mapped items", async () => {
+    const interactions = [
+      { prompt: 'Q1', parameter: 'V1', type: 'int' },
+      { maps : [{ parameter: 'V2', source: 'V1 + 2', type: 'int' }]},
+      { review : 'all' },
+    ]
+
+    let readCount = 0
+    readline.createInterface.mockImplementation(() => ({
+      [Symbol.asyncIterator] : () => ({
+        next : async () => {
+
+          readCount += 1
+          switch (readCount) {
+          case 1: // Q1
+            stringOut.reset()
+            return { value : '1' }
+          case 2: // review 1
+            expect(stringOut.string).toMatch(new RegExp(`^\n${termCtrl}Review 2[^:]+:${termCtrl}\nQ1(?:.|\n)+V2`, 'm'))
+            return { value: 'y' }
+          default:
+            throw new Error('Unexpected read')
+          }
+        }
+      }),
+      close : () => undefined,
+    }))
+
+    const questioner = new Questioner({ interactions, output })
+    await questioner.question()
+
+    expect(questioner.get('V1')).toBe(1)
+    expect(questioner.get('V2')).toBe(3)
   })
 })
