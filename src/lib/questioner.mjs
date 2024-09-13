@@ -61,7 +61,7 @@ const Questioner = class {
     noSkipDefined = false,
     output,
     printOptions,
-  }) {
+  } = {}) {
     this.#input = input
     if (output === undefined) {
       const print = getPrinter(printOptions)
@@ -325,9 +325,8 @@ const Questioner = class {
       }
 
       const definedSkip =
-        // v global no skip               v question-scoped no skip  v otherwise, skip if we has it
-        this.#noSkipDefined !== true
-        && action.noSkipDefined !== true
+        this.#noSkipDefined !== true // global scope no skip
+        && action.noSkipDefined !== true // action scope no skip
         && this.has(action.parameter) === true
 
       if (definedSkip === true) {
@@ -337,6 +336,18 @@ const Questioner = class {
         // just be a string
         const type = translateType(action.type)
         const input = this.get(action.parameter)
+        // we attempt to check initial parameters in verifyInteractions(), but something like a value set by a previous // mapping
+        const [value] = verifyAnswerForm({ 
+          ...action,
+          input: input.toString(),
+          type,
+          _throw: true,
+          // options for the error, if thrown
+          endpointType: 'parameter settings',
+          hint: 'Check your initial parameters.',
+          status: 500,          
+        })
+        /*
         let value
         if (typeof input === 'string') {
           ([value] = verifyAnswerForm({ 
@@ -353,6 +364,7 @@ const Questioner = class {
         else {
           value = input
         }
+        */
         this.#addResult({ action : action, value })
       }
       else {
@@ -547,6 +559,8 @@ const Questioner = class {
         const [value, issue] = verifyAnswerForm({
           type  : BooleanString,
           input : answer,
+          message: 'Please answer yes or no (y/n).',
+          hint: undefined,
         })
         if (issue === undefined) {
           return [value, included]
@@ -562,15 +576,7 @@ const Questioner = class {
   }
 
   async question() {
-    if (this.#interactions === undefined) {
-      throw ArgumentMissingError({
-        endpointType : 'function',
-        argumentName : 'interactions',
-        issue        : "must be set prior to invoking 'question'",
-        status       : 500,
-      })
-    }
-
+    // TODO: this is a holdover from earlier implementation, move process logic here
     await this.#processActions()
   }
 
@@ -587,6 +593,15 @@ const Questioner = class {
   }
 
   #verifyInteractions() {
+    if (this.#interactions === undefined || this.#interactions === null || (Array.isArray(this.#interactions) && this.#interactions.length === 0)) {
+      throw new ArgumentMissingError({
+        endpointType : 'function',
+        argumentName : 'interactions',
+        argumentValue: this.#interactions,
+        status       : 500,
+      })
+    }
+
     const verifyMapping = ({ maps }) => {
       for (const { parameter, source, type, value } of maps) {
         if (parameter === undefined) {
@@ -645,6 +660,11 @@ const Questioner = class {
       }
       else if (action.prompt !== undefined) {
         // TODO: replace with some kind of JSON schema verification
+        const type = translateType(action.type, {
+          message : `Invalid parameter type '${action.type}' in interrogation bundle question ${i + 1}.`,
+          status: 500
+        })
+
         if (action.parameter === undefined) {
           throw new ArgumentInvalidError({
             endpointType : 'configuration',
@@ -653,17 +673,17 @@ const Questioner = class {
             status       : 500,
           })
         }
-        
-        if (
-          action.type !== undefined
-          && typeof action.type === 'string'
-          && !action.type.match(/bool(?:ean)?|int(?:eger)?|float|numeric|string/)
-        ) {
-          throw new ArgumentInvalidError({
-            endpointType : 'configuration',
-            argumentName : 'interactions',
-            issue        : `invalid parameter type '${action.type}' in interrogation bundle question ${i + 1}`,
-            status       : 500,
+        else if (this.has(action.parameter)) { // then check the type
+          const value = this.get(action.parameter)
+          verifyAnswerForm({ 
+            ...action,
+            input: value.toString(),
+            type,
+            _throw: true,
+            // options for the error, if thrown
+            endpointType: 'parameter settings',
+            hint: 'Check your initial parameters.',
+            status: 500,          
           })
         }
       }

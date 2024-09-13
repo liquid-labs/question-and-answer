@@ -444,4 +444,39 @@ describe('Questioner - QnA flow', () => {
     expect(questioner.get('V1')).toBe(1)
     expect(questioner.get('V2')).toBe(3)
   })
+
+  test("'is resiliant to non-answers for review", async () => {
+    const interactions = [
+      { prompt: 'Q1', parameter: 'V1', type: 'int' },
+      { review : 'questions' },
+    ]
+
+    let readCount = 0
+    readline.createInterface.mockImplementation(() => ({
+      [Symbol.asyncIterator] : () => ({
+        next : async () => {
+
+          readCount += 1
+          switch (readCount) {
+          case 1: // Q1
+            return { value : '1' }
+          case 2: // review 1
+            stringOut.reset()
+            return { value: 'blah' }
+          case 3: // re-ask the review
+            expect(stringOut.string).toMatch(new RegExp(`^${termCtrl}Please answer yes or no \\(y/n\\)\\.${termCtrl}\n${termCtrl}Verified\\?`, 'm'))
+            return { value: 'y' }
+          default:
+            throw new Error('Unexpected read')
+          }
+        }
+      }),
+      close : () => undefined,
+    }))
+
+    const questioner = new Questioner({ interactions, output })
+    await questioner.question()
+
+    expect(questioner.get('V1')).toBe(1)
+  })
 })

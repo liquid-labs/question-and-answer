@@ -1,7 +1,7 @@
 import { ArgumentInvalidError, ArgumentTypeError } from 'standard-error-set'
 import { BooleanString, Integer, Numeric, ValidatedString } from 'string-input'
 
-const translateType = (type) => {
+const translateType = (type, errOptions) => {
   const errorHint =
     "Must be either a type function or 'string', 'int', 'numeric', or 'bool'."
 
@@ -14,6 +14,7 @@ const translateType = (type) => {
       message : `Invalid type designation type '${typeType}'.`,
       hint    : errorHint,
       status  : 500,
+      ...errOptions,
     })
   }
 
@@ -36,6 +37,7 @@ const translateType = (type) => {
         message : `Invalid parameter type '${type}'.`,
         hint    : errorHint,
         status  : 500,
+        ...errOptions,
       })
   }
 }

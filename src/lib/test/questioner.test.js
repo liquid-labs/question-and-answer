@@ -31,13 +31,33 @@ describe('Questioner', () => {
     stringOut.reset()
   })
 
-  test('.interactions returns independent (cloned) interactions', () => {
+  describe('accessors', () => {
     const interactions = [ { prompt: 'Q', parameter: 'V' }]
-    const questioner = new Questioner({ interactions })
-    const interactionsCopy = questioner.interactions
-    expect(interactionsCopy).toEqual(interactions)
-    interactionsCopy[0].prompt = 'W'
-    expect(interactionsCopy).not.toEqual(interactions)
+    let questioner
+
+    beforeAll(async () => {
+      const initialParameters = { V: 'foo' }
+      questioner = new Questioner({ interactions, initialParameters })
+      await questioner.question()
+    })
+
+    test('.interactions returns independent (cloned) interactions', () => {
+      const interactionsCopy = questioner.interactions
+      delete interactionsCopy[0].disposition
+      expect(interactionsCopy).toEqual(interactions)
+      interactionsCopy[0].prompt = 'W'
+      expect(interactionsCopy).not.toEqual(interactions)
+    })
+
+    test('.results returns cloned results', () => {
+      const results1 = questioner.results
+      const results2 = questioner.results
+      expect(results1).toEqual(results2)
+      expect(results1).not.toBe(results2)
+      results1[0].value = 'bar'
+      expect(results1[0].value).toBe('bar')
+      expect(results2[0].value).toBe('foo')
+    })
   })
 
   describe('interactions validation', () => {
@@ -48,6 +68,16 @@ describe('Questioner', () => {
     ])("throws on invalid 'map' action source type %s", (type, expectedType) => {
       const interactions = [{ maps: [{ parameter: 'V', source: 'BAR', type }]}]
       expect(() => new Questioner({interactions})).toThrow(new RegExp(`is wrong type. Received type '${expectedType}'`))
+    })
+
+    test.each([undefined, null, []])('raises error when attempting to question with no %s interactions', async (interactions) => {
+      try {
+        const questioner = new Questioner({ interactions })
+        throw new Error('Failed to throw')
+      }
+      catch (e) {
+        expect(e.message).toMatch(/'interactions' is (?:'undefined'|'null'|an empty array)/)
+      }
     })
   })
 
@@ -777,15 +807,23 @@ describe('Questioner', () => {
     test('raises an error when invalid (initial parameters)', async () => {
       const interactions = [{ parameter: 'V', prompt: 'Q', type: 'int' }]
       const initialParameters = { V: 'foo' }
-      const questioner = new Questioner({ initialParameters, interactions, output })
+      
 
       try {
-        await questioner.question()
+        const questioner = new Questioner({ initialParameters, interactions, output })
         throw new Error('Did not throw when expected')
       }
       catch (e) {
         expect(e.message).toMatch(/does not appear to be an integer\. Check your initial parameters./)
       }
+    })
+  })
+
+  describe('Reviews', () => {
+    test('gracefully handles empty review', async () => {
+      const interactions = [{ review: 'questions' }]
+      const questioner = new Questioner({ interactions })
+      await questioner.question()
     })
   })
 })
