@@ -8,13 +8,10 @@ import * as types from 'string-input'
 import {
   DO_YOU_LIKE_MILK,
   IS_THIS_THE_END,
-  badParameterIB,
   conditionalQuestionIB,
   conditionStatementIB,
   cookieParameterIB,
-  noQuestionParameterIB,
   simpleIB,
-  simpleMapIB,
   sourceMappingIB,
   statementIB
 } from './test-data'
@@ -32,11 +29,11 @@ describe('Questioner', () => {
   })
 
   describe('accessors', () => {
-    const interactions = [ { prompt: 'Q', parameter: 'V' }]
+    const interactions = [{ prompt : 'Q', parameter : 'V' }]
     let questioner
 
     beforeAll(async () => {
-      const initialParameters = { V: 'foo' }
+      const initialParameters = { V : 'foo' }
       questioner = new Questioner({ interactions, initialParameters })
       await questioner.question()
     })
@@ -64,30 +61,60 @@ describe('Questioner', () => {
     test.each([
       [undefined, ValidatedString],
       ['string', ValidatedString],
-      [Day, Day]
-    ])("throws on invalid 'map' action source type %s", (type, expectedType) => {
-      const interactions = [{ maps: [{ parameter: 'V', source: 'BAR', type }]}]
-      expect(() => new Questioner({interactions})).toThrow(new RegExp(`is wrong type. Received type '${expectedType}'`))
-    })
+      [Day, Day],
+    ])(
+      "throws on invalid 'map' action source type %s",
+      (type, expectedType) => {
+        const interactions = [
+          { maps : [{ parameter : 'V', source : 'BAR', type }] },
+        ]
+        expect(() => new Questioner({ interactions })).toThrow(
+          new RegExp(`is wrong type. Received type '${expectedType}'`)
+        )
+      }
+    )
 
     test.each([
       ['is undefined', undefined, /'interactions' is 'undefined'/],
       ['is null', null, /'interactions' is 'null'/],
       ['is empty array', [], /'interactions' is an empty array/],
-      ['mapping lacks parameter', [{ maps: [{ value: 'foo' }] }], /'mapping' action 1 fails to specify a 'parameter'/],
-      ['mapping lacks source and value', [{ maps: [{ parameter: 'foo' }] }], /mapping action 1 for 'foo' must specify one of 'source' or 'value'/],
-      ['action lacks proper type', [{ foo: 'bar' }], /action 1 defines neither 'prompt', 'maps', 'statement', nor 'review'; cannot determine type/],
-      ['action has multiple types', [{ prompt: 'Q', statement: 'S' }], /action 1 defines multiple action types/],
-      ['invalid review type', [{ prompt: 'Q', parameter: 'V'}, { review: 'blah' }], /invalid review type 'blah' for action 2/]
-    ])('raises error on bad interactions %s', async (desc, interactions, errMatch) => {
-      try {
-        const questioner = new Questioner({ interactions })
-        throw new Error('Failed to throw')
+      [
+        'mapping lacks parameter',
+        [{ maps : [{ value : 'foo' }] }],
+        /'mapping' action 1 fails to specify a 'parameter'/,
+      ],
+      [
+        'mapping lacks source and value',
+        [{ maps : [{ parameter : 'foo' }] }],
+        /mapping action 1 for 'foo' must specify one of 'source' or 'value'/,
+      ],
+      [
+        'action lacks proper type',
+        [{ foo : 'bar' }],
+        /action 1 defines neither 'prompt', 'maps', 'statement', nor 'review'; cannot determine type/,
+      ],
+      [
+        'action has multiple types',
+        [{ prompt : 'Q', statement : 'S' }],
+        /action 1 defines multiple action types/,
+      ],
+      [
+        'invalid review type',
+        [{ prompt : 'Q', parameter : 'V' }, { review : 'blah' }],
+        /invalid review type 'blah' for action 2/,
+      ],
+    ])(
+      'raises error on bad interactions %s',
+      async (desc, interactions, errMatch) => {
+        try {
+          new Questioner({ interactions }) // eslint-disable-line no-new
+          throw new Error('Failed to throw')
+        }
+        catch (e) {
+          expect(e.message).toMatch(errMatch)
+        }
       }
-      catch (e) {
-        expect(e.message).toMatch(errMatch)
-      }
-    })
+    )
   })
 
   describe('boolean questions', () => {
@@ -196,7 +223,17 @@ describe('Questioner', () => {
       }))
 
       const questioner = new Questioner({
-        interactions : simpleMapIB,
+        interactions : [
+          { prompt : 'Q', parameter : 'IS_CLIENT', type : 'bool' },
+          {
+            condition : 'IS_CLIENT',
+            maps      : [{ parameter : 'ORG_COMMON_NAME', value : 'us' }],
+          },
+          {
+            condition : '!IS_CLIENT',
+            maps      : [{ parameter : 'ORG_COMMON_NAME', value : 'them' }],
+          },
+        ],
         output,
       })
 
@@ -238,9 +275,9 @@ describe('Questioner', () => {
       "maps 'source'd type %s input '%s' -> %p",
       async (type, value, expected) => {
         const interactions = [
-          { maps : [{ parameter: 'V', source: 'ENV_VAR', type }] }
+          { maps : [{ parameter : 'V', source : 'ENV_VAR', type }] },
         ]
-        const initialParameters = { ENV_VAR: value }
+        const initialParameters = { ENV_VAR : value }
 
         const questioner = new Questioner({ interactions, initialParameters })
         await questioner.question()
@@ -291,7 +328,13 @@ describe('Questioner', () => {
 
     test("when question is condition-skipped, uses 'elseValue' if present (literal 'elseValue')", async () => {
       const interactions = [
-        { prompt : 'Q', parameter : 'V', type : 'bool', condition: 'C', elseValue: false },
+        {
+          prompt    : 'Q',
+          parameter : 'V',
+          type      : 'bool',
+          condition : 'C',
+          elseValue : false,
+        },
         {
           condition : 'V',
           maps      : [{ parameter : 'X', value : 'a' }],
@@ -308,14 +351,20 @@ describe('Questioner', () => {
       await questioner.question()
 
       const result = questioner.getResult('V')
-            expect(result.value).toBe(false)
-            expect(result.disposition).toBe(CONDITION_SKIPPED)
-            expect(questioner.get('X')).toBe('b')
+      expect(result.value).toBe(false)
+      expect(result.disposition).toBe(CONDITION_SKIPPED)
+      expect(questioner.get('X')).toBe('b')
     })
 
     test("when question is condition-skipped, uses 'elseSource' if present", async () => {
       const interactions = [
-        { prompt : 'Q', parameter : 'V', type : 'bool', condition: 'C', elseSource: 'BAR || BAZ' },
+        {
+          prompt     : 'Q',
+          parameter  : 'V',
+          type       : 'bool',
+          condition  : 'C',
+          elseSource : 'BAR || BAZ',
+        },
         {
           condition : 'BAZ',
           maps      : [{ parameter : 'X', value : 'a' }],
@@ -376,59 +425,76 @@ describe('Questioner', () => {
       [5, 'integer', 5],
       [5.5, 'float', 5.5],
       [6.6, 'numeric', 6.6],
-      [[1,2], 'int', [1,2]]
-    ])("literal default '%s' type '%s' -> %p", async (defaultValue, type, expected) => {
-      const interactions = [{ prompt: 'Q', parameter: 'V', type, default: defaultValue }]
-      if (Array.isArray(defaultValue)) {
-        interactions[0].multiValue = true
+      [[1, 2], 'int', [1, 2]],
+    ])(
+      "literal default '%s' type '%s' -> %p",
+      async (defaultValue, type, expected) => {
+        const interactions = [
+          { prompt : 'Q', parameter : 'V', type, default : defaultValue },
+        ]
+        if (Array.isArray(defaultValue)) {
+          interactions[0].multiValue = true
+        }
+
+        let askCount = 0
+        readline.createInterface.mockImplementation(() => ({
+          [Symbol.asyncIterator] : () => ({
+            next : async () => {
+              if (askCount > 1) {
+                throw new Error('Failed to default on first ask.')
+              }
+              askCount += 1
+
+              return { value : '' }
+            },
+          }),
+          close : () => undefined,
+        }))
+
+        const questioner = new Questioner({ interactions, output })
+
+        await questioner.question()
+
+        expect(questioner.get('V')).toEqual(expected)
       }
-
-      let askCount = 0
-      readline.createInterface.mockImplementation(() => ({
-        [Symbol.asyncIterator] : () => ({
-          next : async () => {
-            if (askCount > 1) {
-              throw new Error('Failed to default on first ask.')
-            }
-            askCount += 1
-
-            return { value : '' }
-          },
-        }),
-        close : () => undefined,
-      }))
-
-      const questioner = new Questioner({ interactions, output })
-
-      await questioner.question()
-
-      expect(questioner.get('V')).toEqual(expected)
-    })
+    )
 
     test.each([
       [true, 'bool', /\[Y\/n\|-\]/],
       [false, 'bool', /\[y\/N\|-\]/],
-    ])("default '%s' type '%s' prompt matches '%p'", async (defaultValue, type, matches) => {
-      const interactions = [ { prompt : 'Q', parameter : 'V', type, default : defaultValue }]
+    ])(
+      "default '%s' type '%s' prompt matches '%p'",
+      async (defaultValue, type, matches) => {
+        const interactions = [
+          { prompt : 'Q', parameter : 'V', type, default : defaultValue },
+        ]
 
-      readline.createInterface.mockImplementation(() => ({
-        [Symbol.asyncIterator] : () => ({
-          next : async () => {
-            expect(stringOut.string.trim()).toMatch(matches)
+        readline.createInterface.mockImplementation(() => ({
+          [Symbol.asyncIterator] : () => ({
+            next : async () => {
+              expect(stringOut.string.trim()).toMatch(matches)
 
-            return { value : '' }
-          },
-        }),
-        close : () => undefined,
-      }))
+              return { value : '' }
+            },
+          }),
+          close : () => undefined,
+        }))
 
-      const questioner = new Questioner({ interactions, output })
+        const questioner = new Questioner({ interactions, output })
 
-      await questioner.question()
-    })
+        await questioner.question()
+      }
+    )
 
     test('displays default option value', async () => {
-      const interactions = [ { prompt : 'Q', parameter : 'V', options: ['foo', 'bar'], default : 'foo' }]
+      const interactions = [
+        {
+          prompt    : 'Q',
+          parameter : 'V',
+          options   : ['foo', 'bar'],
+          default   : 'foo',
+        },
+      ]
 
       let readCount = 0
       readline.createInterface.mockImplementation(() => ({
@@ -794,43 +860,63 @@ describe('Questioner', () => {
 
       expect(questioner.get('IS_CLIENT')).toBe(expected)
     })
-  
+
     const badDefaultOptions = [
-      { prompt: 'Q', options: ['foo', 'bar'], default: 'baz', parameter: 'V' }
+      { prompt : 'Q', options : ['foo', 'bar'], default : 'baz', parameter : 'V' },
     ]
 
     test.each([
-      ['an invalid parameter type', badParameterIB, /invalid parameter type/i],
+      [
+        'an invalid parameter type',
+        [{ parameter : 'FOO', prompt : 'foo?', type : 'invalid' }],
+        /invalid parameter type/i,
+      ],
       [
         "no 'parameter' for question",
-        noQuestionParameterIB,
+        [{ prompt : 'hey' }],
         /does not define a 'parameter'/,
       ],
-      ['bad options type', [{ prompt: 'Q', options: 'blah', parameter: 'V' }], /'options' must be an array/],
-      ['default does not match options', badDefaultOptions, /is not any of the specified options/],
-    ])('Raises exception on verifying interactions with %s.', (desc, ib, exceptionRe) =>
-      expect(() => new Questioner({ interactions : ib })).toThrow(exceptionRe))
+      [
+        'bad options type',
+        [{ prompt : 'Q', options : 'blah', parameter : 'V' }],
+        /'options' must be an array/,
+      ],
+      [
+        'default does not match options',
+        badDefaultOptions,
+        /is not any of the specified options/,
+      ],
+    ])(
+      'Raises exception on verifying interactions with %s.',
+      (desc, ib, exceptionRe) =>
+        expect(() => new Questioner({ interactions : ib })).toThrow(exceptionRe)
+    )
   })
 
   describe('Preset parameters', () => {
     test('raises an error when invalid (initial parameters)', async () => {
-      const interactions = [{ parameter: 'V', prompt: 'Q', type: 'int' }]
-      const initialParameters = { V: 'foo' }
-      
+      const interactions = [{ parameter : 'V', prompt : 'Q', type : 'int' }]
+      const initialParameters = { V : 'foo' }
 
       try {
-        const questioner = new Questioner({ initialParameters, interactions, output })
+        new Questioner({ // eslint-disable-line no-new
+          initialParameters,
+          interactions,
+          output,
+        })
         throw new Error('Did not throw when expected')
       }
       catch (e) {
-        expect(e.message).toMatch(/does not appear to be an integer\. Check your initial parameters./)
+        expect(e.message).toMatch(
+          /does not appear to be an integer\. Check your initial parameters./
+        )
       }
     })
   })
 
   describe('Reviews', () => {
     test('gracefully handles empty review', async () => {
-      const interactions = [{ review: 'questions' }]
+      const interactions = [{ review : 'questions' }]
       const questioner = new Questioner({ interactions })
       await questioner.question()
     })

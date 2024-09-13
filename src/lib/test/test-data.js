@@ -20,9 +20,6 @@ const commonMapping = [
   },
 ]
 
-const simpleMapIB = structuredClone(simpleIB)
-simpleMapIB.push(...structuredClone(commonMapping))
-
 const sourceMappingIB = structuredClone(simpleIntQuestionIB)
 sourceMappingIB.push(
   ...[
@@ -71,10 +68,6 @@ conditionalQuestionIB.push({
   parameter : 'IS_END',
 })
 
-const badParameterIB = [{ parameter : 'FOO', prompt : 'foo?', type : 'invalid' }]
-
-const noQuestionParameterIB = [{ prompt : 'hey' }]
-
 const statementIB = [{ statement : 'Hi!' }]
 
 const conditionStatementIB = [
@@ -87,15 +80,12 @@ export {
   IS_THE_COMPANY_THE_CLIENT,
   DO_YOU_LIKE_MILK,
   IS_THIS_THE_END,
-  badParameterIB,
   conditionalQuestionIB,
   conditionStatementIB,
   cookieParameterIB,
   doubleQuestionIB,
-  noQuestionParameterIB,
   simpleIntQuestionIB,
   simpleIB,
-  simpleMapIB,
   sourceMappingIB,
   statementIB
 }
