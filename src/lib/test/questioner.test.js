@@ -70,13 +70,22 @@ describe('Questioner', () => {
       expect(() => new Questioner({interactions})).toThrow(new RegExp(`is wrong type. Received type '${expectedType}'`))
     })
 
-    test.each([undefined, null, []])('raises error when attempting to question with no %s interactions', async (interactions) => {
+    test.each([
+      ['is undefined', undefined, /'interactions' is 'undefined'/],
+      ['is null', null, /'interactions' is 'null'/],
+      ['is empty array', [], /'interactions' is an empty array/],
+      ['mapping lacks parameter', [{ maps: [{ value: 'foo' }] }], /'mapping' action 1 fails to specify a 'parameter'/],
+      ['mapping lacks source and value', [{ maps: [{ parameter: 'foo' }] }], /mapping action 1 for 'foo' must specify one of 'source' or 'value'/],
+      ['action lacks proper type', [{ foo: 'bar' }], /action 1 defines neither 'prompt', 'maps', 'statement', nor 'review'; cannot determine type/],
+      ['action has multiple types', [{ prompt: 'Q', statement: 'S' }], /action 1 defines multiple action types/],
+      ['invalid review type', [{ prompt: 'Q', parameter: 'V'}, { review: 'blah' }], /invalid review type 'blah' for action 2/]
+    ])('raises error on bad interactions %s', async (desc, interactions, errMatch) => {
       try {
         const questioner = new Questioner({ interactions })
         throw new Error('Failed to throw')
       }
       catch (e) {
-        expect(e.message).toMatch(/'interactions' is (?:'undefined'|'null'|an empty array)/)
+        expect(e.message).toMatch(errMatch)
       }
     })
   })

@@ -602,14 +602,14 @@ const Questioner = class {
       })
     }
 
-    const verifyMapping = ({ maps }) => {
+    const verifyMapping = (i, { maps }) => {
       for (const { parameter, source, type, value } of maps) {
         if (parameter === undefined) {
           throw new ArgumentInvalidError({
             endpointType : 'configuration',
             argumentName : 'interactions',
             issue :
-              "one of the 'mapping' actions fails to specify a 'parameter'",
+              `'mapping' action ${i + 1} fails to specify a 'parameter'`,
             status : 500,
           })
         }
@@ -617,7 +617,7 @@ const Questioner = class {
           throw new ArgumentInvalidError({
             endpointType : 'configuration',
             argumentName : 'interactions',
-            issue        : `mapping for '${parameter}' must specify one of 'source' or 'value'`,
+            issue        : `mapping action ${i + 1} for '${parameter}' must specify one of 'source' or 'value'`,
             status       : 500,
           })
         }
@@ -627,7 +627,7 @@ const Questioner = class {
           if (![BooleanString, Integer, Numeric].includes(typeFunc)) {
             throw new ArgumentTypeError({
               endpointType : 'interactions',
-              argumentName : parameter,
+              argumentName : `interactions' action ${i + 1} for '${parameter}`,
               receivedType: typeFunc,
               argumentType: "bool', 'int', or 'numeric",
               status       : 500,
@@ -688,14 +688,14 @@ const Questioner = class {
         }
       }
       else if (action.maps !== undefined) {
-        verifyMapping(action)
+        verifyMapping(i, action)
       }
       else if (action.review !== undefined) {
         if (!['all', 'questions'].includes(action.review)) {
           throw new ArgumentInvalidError({
             endpointType : 'configuration',
             argumentName : 'interactions',
-            issue        : `invalid review type '${action.review}'; must be 'all' or 'questions'`,
+            issue        : `invalid review type '${action.review}' for action ${i + 1}; must be 'all' or 'questions'`,
             status       : 500,
           })
         }

@@ -25,7 +25,7 @@ const ibClone = (structure) => {
 
       return result
     }
-    // else
+    // else (though I'm hard pressed to find a situation where this happens)
     throw e
   }
 }
