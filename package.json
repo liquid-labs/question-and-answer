@@ -31,15 +31,16 @@
   },
   "homepage": "https://github.com/liquid-labs/question-and-answer#readme",
   "dependencies": {
-    "@liquid-labs/condition-eval": "^1.0.0-alpha.18",
+    "@liquid-labs/condition-eval": "^1.0.0-alpha.19",
     "cli-columns": "^4.0.0",
     "magic-print": "^1.0.0-alpha.18",
-    "standard-error-set": "^1.0.0-alpha.9",
-    "string-input": "^1.0.0-alpha.10"
+    "regex-repo": "^5.0.1",
+    "standard-error-set": "^1.0.0-beta.2",
+    "string-input": "^1.0.0-alpha.13"
   },
   "devDependencies": {
     "@liquid-labs/sdlc-resource-babel-and-rollup": "^1.0.0-alpha.9",
-    "@liquid-labs/sdlc-resource-eslint": "^1.0.0-alpha.20",
+    "@liquid-labs/sdlc-resource-eslint": "^1.0.0-alpha.22",
     "@liquid-labs/sdlc-resource-jest": "^1.0.0-alpha.5"
   },
   "_npm-check-plus": {

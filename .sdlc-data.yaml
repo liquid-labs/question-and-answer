@@ -75,7 +75,7 @@ projects:
           priority: 0
           content: >-
             [![coverage:
-            72%](./.readme-assets/coverage.svg)](https://github.com/liquid-labs/question-and-answer/pulls?q=is%3Apr+is%3Aclosed)
+            100%](./.readme-assets/coverage.svg)](https://github.com/liquid-labs/question-and-answer/pulls?q=is%3Apr+is%3Aclosed)
           path: >-
             /Users/zane/playground/question-and-answer/.readme-assets/coverage.svg
           purpose: Test coverage badge for README.md.

@@ -25,10 +25,9 @@ const ibClone = (structure) => {
 
       return result
     }
+    // else (though I'm hard pressed to find a situation where this happens)
+    throw e
   }
-
-  // else, it's a primitive type
-  return structure
 }
 
 export { ibClone }

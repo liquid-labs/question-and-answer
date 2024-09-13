@@ -1,7 +1,7 @@
-import { ArgumentInvalidError } from 'standard-error-set'
+import { ArgumentInvalidError, ArgumentTypeError } from 'standard-error-set'
 import { BooleanString, Integer, Numeric, ValidatedString } from 'string-input'
 
-const translateType = (type) => {
+const translateType = (type, errOptions) => {
   const errorHint =
     "Must be either a type function or 'string', 'int', 'numeric', or 'bool'."
 
@@ -10,10 +10,11 @@ const translateType = (type) => {
     return type
   }
   else if (type !== undefined && typeType !== 'string') {
-    throw new ArgumentInvalidError({
-      message : `Cannot translate invalid type '${type}'; ${errorHint}.`,
+    throw new ArgumentTypeError({
+      message : `Invalid type designation type '${typeType}'.`,
       hint    : errorHint,
       status  : 500,
+      ...errOptions,
     })
   }
 
@@ -33,9 +34,10 @@ const translateType = (type) => {
       return BooleanString
     default:
       throw new ArgumentInvalidError({
-        message : `Unknown parameter type: '${type}'; ${errorHint}.`,
+        message : `Invalid parameter type '${type}'.`,
         hint    : errorHint,
         status  : 500,
+        ...errOptions,
       })
   }
 }

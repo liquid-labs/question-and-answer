@@ -18,6 +18,7 @@ import { getPrinter } from 'magic-print'
 import {
   ArgumentInvalidError,
   ArgumentMissingError,
+  ArgumentTypeError,
   rethrowIf
 } from 'standard-error-set'
 import { BooleanString, Integer, Numeric } from 'string-input'
@@ -60,7 +61,7 @@ const Questioner = class {
     noSkipDefined = false,
     output,
     printOptions,
-  }) {
+  } = {}) {
     this.#input = input
     if (output === undefined) {
       const print = getPrinter(printOptions)
@@ -71,7 +72,7 @@ const Questioner = class {
     this.#initialParameters = initialParameters
     this.#noSkipDefined = noSkipDefined
 
-    this.#verifyInterrogationBundle()
+    this.#verifyInteractions()
 
     let index = 0
     for (const action of this.#interactions) {
@@ -80,19 +81,31 @@ const Questioner = class {
     }
   }
 
-  #addResult({ source, value }) {
+  /**
+   * Adds a resolved action result to our list if results. A "result" means a parameter value has been resolved, either
+   * by an answer, an initial parameter, a condition setting, or a mapping. Note __only `actions` with a parameter
+   * value are saved__. I.e., to avoid having to perform "if parameter set" tests at multiple call points, we do it
+   * here. Actions without parameters are, for example, conditioned skipped maps.
+   * @param {object} options - The inputs.
+   * @param {object} options.action - The 'action' to (potentially) save as a result.
+   * @param {*} options.value - The value the action resolved to.
+   * @private
+   */
+  #addResult({ action, value }) {
+    if (action.parameter === undefined) {
+      return
+    }
     // We want 'value' last because the 'value' attached to the source is always a string, while the final value will
     // have been converted by type.
 
-    const result = Object.assign(ibClone(source), { value })
+    const result = Object.assign(ibClone(action), { value })
     // Let's tidy up the results with some info that is more of internal use and less relevant for reporting.
-    delete result.mappings
     // TODO: add option to retain these?
     delete result.elseValue
     delete result.elseSource
-    source.value = value
+    result.value = value
 
-    this.#results.push(source)
+    this.#results.push(result)
   }
 
   async #askQuestion(q) {
@@ -101,16 +114,32 @@ const Questioner = class {
     const rl = readline.createInterface({
       input    : this.#input,
       output   : this.#output,
-      terminal : false,
-    }) // TODO: why is terminal false?
+      terminal : false, // TODO: why is terminal false?
+    })
 
     try {
       const type = translateType(q.type)
       // the previous answer, if any, becomes the new default
-      const defaultValue = q.rawAnswer || q.default
+      let defaultValue
+      if (q.options === undefined) {
+        defaultValue = Object.hasOwn(q, 'rawAnswer') ? q.rawAnswer : q.default
+      }
+      else if (Object.hasOwn(q, 'rawAnswer')) {
+        // the raw answer has already been validated on the previous go around, so we can trust it
+        const selectionI = parseInt(q.rawAnswer)
+        defaultValue = q.options[selectionI - 1]
+      }
+      else {
+        defaultValue = q.default
+      }
+      if (typeof defaultValue === 'string') {
+        const type = translateType(q.type)
+        // TODO: this won't work with multivalue actions and multivalue defaults...
+        // default values should have already been validated
+        ;[defaultValue] = verifyAnswerForm({ ...q, input : defaultValue, type })
+      }
 
       let prompt = q.prompt
-      let defaultI
       let hint = ''
       if (q.options === undefined) {
         if (prompt.match(/\[[^]+\] *$/m)) {
@@ -136,19 +165,12 @@ const Questioner = class {
       else {
         // the question has defined options
         prompt += '\n'
+        if (defaultValue !== undefined) {
+          prompt += '[' + defaultValue + ']\n'
+        }
+        prompt += '\n'
         const cliOptions = q.options.map((o, i) => i + 1 + ') ' + o)
         prompt += columns(cliOptions, { width : this.#output.width }) + '\n'
-        if (defaultValue !== undefined) {
-          // defaultI is 1-indexed
-          defaultI = q.options.indexOf(defaultValue) + 1
-          if (defaultI === 0) {
-            delete q.default
-          }
-          else {
-            defaultI += '' // processing expects a string
-            prompt += '[' + defaultValue + '] '
-          }
-        }
       }
 
       if (q.multiValue === true) {
@@ -164,30 +186,11 @@ const Questioner = class {
       let answer = (await it.next()).value.trim() || ''
       if (answer === '-') {
         answer = undefined
-        delete q.default
+        delete q.rawAnswer
       }
-      else if (answer === '') {
-        if (defaultI === 0) {
-          answer = undefined
-        }
-        else {
-          // we change the default to a string so that we can still process the constraints using the 'string-input'
-          // style type functions which expect a string input.
-          answer = (defaultI || defaultValue || '').toString()
-        }
+      else {
+        q.rawAnswer = answer.toString()
       }
-      q.rawAnswer = answer.toString()
-
-      // if the user defines a separator, it may contain RE special characters we need to escape
-      const separator =
-        q.separator?.replaceAll(
-          /(\.|\+|\*|\?|\^|\$|\||\(|\)|\{|\}|\[|\]|\\)/g,
-          '\\$1'
-        ) || ','
-      const splitAnswers =
-        q.multiValue === true
-          ? answer.split(new RegExp(`\\s*${separator}\\s*`))
-          : [answer]
 
       const reAskQuestion = async (issue) => {
         const message = `<warn>${issue}<rst>\n`
@@ -197,34 +200,74 @@ const Questioner = class {
       }
 
       const values = []
-      for (const anAnswer of splitAnswers) {
-        if (q.options === undefined) {
-          const [value, issue] = verifyAnswerForm({
-            ...q,
-            type,
-            input : anAnswer,
-          })
-          if (issue === undefined) {
-            values.push(value)
+      const multiErrorMessage = (leadIn) =>
+        `${leadIn} Please enter a number between 1 and ${q.options.length}.`
+
+      if (answer === '') {
+        if (defaultValue !== undefined) {
+          if (q.multiValue === true && Array.isArray(defaultValue) === true) {
+            values.push(...defaultValue)
           }
           else {
-            await reAskQuestion(issue)
+            values.push(defaultValue)
           }
         }
         else {
-          // it's an options question
-          try {
-            const selectionI = Integer(anAnswer, {
-              max : q.options.length,
-              min : 1,
+          // there is no answer and no default value
+          const message =
+            q.multiValue === true
+              ? multiErrorMessage('No default defined.')
+              : 'No default defined. Please provide a valid answer.'
+
+          return await reAskQuestion(message)
+        }
+      }
+      else {
+        // if the user defines a separator, it may contain RE special characters we need to escape
+        const separator =
+          q.separator?.replaceAll(
+            /(\.|\+|\*|\?|\^|\$|\||\(|\)|\{|\}|\[|\]|\\)/g,
+            '\\$1'
+          ) || ','
+        // TODO: make this conditional on multi-value answers
+        const splitAnswers =
+          q.multiValue === true
+            ? answer.split(new RegExp(`\\s*${separator}\\s*`))
+            : [answer]
+
+        for (const anAnswer of splitAnswers) {
+          if (q.options === undefined) {
+            const [value, issue] = verifyAnswerForm({
+              ...q,
+              type,
+              input : anAnswer,
             })
+            if (issue === undefined) {
+              values.push(value)
+            }
+            else {
+              delete q.rawAnswer
+
+              return await reAskQuestion(issue)
+            }
+          }
+          else {
+            // it's an options question
+            const [selectionI, issue] = verifyAnswerForm({
+              type     : Integer,
+              input    : anAnswer,
+              required : true,
+              max      : q.options.length,
+              min      : q.required === true ? 1 : 0,
+              message  : multiErrorMessage('Invalid selection.'),
+            })
+            if (issue !== undefined) {
+              delete q.rawAnswer
+
+              return await reAskQuestion(issue)
+            } // else continue
             const value = q.options[selectionI - 1]
             values.push(value)
-          }
-          catch (e) {
-            await reAskQuestion(
-              `Please enter a number between 1 and ${q.options.length}.`
-            )
           }
         }
       }
@@ -232,7 +275,7 @@ const Questioner = class {
       // if we get here, then the answers are good
       q.disposition = ANSWERED
       const value = q.multiValue === true ? values : values[0]
-      this.#addResult({ source : q, value })
+      this.#addResult({ action : q, value })
     }
     finally {
       // try for rl
@@ -257,7 +300,7 @@ const Questioner = class {
             typeof elseValue === 'string'
               ? verifyAnswerForm({ ...action, input : elseValue, type })
               : elseValue
-          this.#addResult({ source : action, value })
+          this.#addResult({ action, value })
         }
         else if (action.elseSource !== undefined) {
           const type = translateType(action.type)
@@ -267,21 +310,24 @@ const Questioner = class {
               : this.#evalNumber(action.elseSource)
           const [value] = verifyAnswerForm({
             ...action,
-            input : evalResult.toString(),
+            input        : evalResult.toString(),
             type,
+            _throw       : true,
+            // these are for the ArgumentInvalidError, if thrown
+            endpointType : "action 'elseSource' for",
+            status       : 500,
           })
-          this.#addResult({ source : action, value })
+          this.#addResult({ action, value })
         }
         else {
-          this.#addResult({ source : action })
+          this.#addResult({ action })
         }
         continue
       }
 
       const definedSkip =
-        // v global no skip               v question-scoped no skip  v otherwise, skip if we has it
-        this.#noSkipDefined !== true
-        && action.noSkipDefined !== true
+        this.#noSkipDefined !== true // global scope no skip
+        && action.noSkipDefined !== true // action scope no skip
         && this.has(action.parameter) === true
 
       if (definedSkip === true) {
@@ -290,16 +336,37 @@ const Questioner = class {
         // this is necessary because maybe we're getting the definition as part of the parameter inputs, which could
         // just be a string
         const type = translateType(action.type)
-        const input = this.get(action.parameter).toString()
-        const [value, issue] = verifyAnswerForm({ ...action, input, type })
-        if (issue !== undefined) {
-          throw new ArgumentInvalidError({
-            endpointType : 'input',
-            argumentName : action.parameter,
-            issue,
-          })
+        const input = this.get(action.parameter)
+        // we attempt to check initial parameters in verifyInteractions(), but something like a value set by a previous // mapping
+        const [value] = verifyAnswerForm({
+          ...action,
+          input        : input.toString(),
+          type,
+          _throw       : true,
+          // options for the error, if thrown
+          endpointType : 'parameter settings',
+          hint         : 'Check your initial parameters.',
+          status       : 500,
+        })
+        /*
+        let value
+        if (typeof input === 'string') {
+          ([value] = verifyAnswerForm({
+            ...action,
+            input,
+            type,
+            _throw: true,
+            // options for the error, if thrown
+            endpointType: 'parameter settings',
+            hint: 'Check your initial parameters.',
+            status: 500,
+          }))
         }
-        this.#addResult({ source : action, value })
+        else {
+          value = input
+        }
+        */
+        this.#addResult({ action, value })
       }
       else {
         // We want to put a newline between items, but if the previous was a question, we already have a newline from
@@ -319,11 +386,13 @@ const Questioner = class {
           // it's a statement
           this.#write({ options : action.outputOptions, text : action.statement })
         }
-        else if (action.review !== undefined) {
+        else {
+          // if (action.review !== undefined) {; interactions validated, so this must be
           // it's a review
           const [result, included] = await this.#processReview(action)
-          if (result === true && action.parameter !== undefined) {
-            this.#addResult({ source : action, value : result })
+          if (result === true) {
+            // successful reviews can set a value
+            this.#addResult({ action, value : result })
           }
           else if (result === false) {
             const toNix = included.reduce((acc, i) => {
@@ -332,17 +401,10 @@ const Questioner = class {
               return acc
             }, {})
             this.#results = this.#results.filter((r) => !(r.parameter in toNix))
-            await this.#processActions()
-            break
+
+            // TODO: shouldn't this only re-process the included actions?
+            return await this.#processActions()
           }
-        }
-        else {
-          throw new ArgumentInvalidError({
-            endpointType : 'configuration',
-            argumentName : 'interactions',
-            issue        : `could not determine action type of ${action}`,
-            status       : 500,
-          })
         }
       } // else not defined skip
       first = false
@@ -385,13 +447,21 @@ const Questioner = class {
   }
 
   has(parameter) {
-    return (
-      this.get(parameter) !== undefined || parameter in this.#initialParameters
-    )
+    const has =
+      this.#results.some((r) => r.parameter === parameter)
+      || parameter in this.#initialParameters
+
+    return has
   }
 
   get interactions() {
-    return this.#interactions
+    const clone = ibClone(this.#interactions)
+    // remove internal bits
+    for (const action of clone) {
+      delete action._index
+    }
+
+    return clone
   }
 
   #processMapping(mapping) {
@@ -403,17 +473,8 @@ const Questioner = class {
         if (map.source !== undefined) {
           let value
 
-          // recall maps only support boolean and numeric types
-          if (![BooleanString, Integer, Numeric].includes(type)) {
-            throw new ArgumentInvalidError({
-              endpointType : 'configuration',
-              argumentName : 'interactions',
-              issue        : `cannot map a 'source' value to parameter '${map.parameter}' of type '${map.type || 'string'}'`,
-              hint         : "Type must be 'boolean', 'integer', or 'numeric'.",
-              status       : 500,
-            })
-          }
-          else if (map.type === BooleanString) {
+          // type validated in verifyInteractions
+          if (type === BooleanString) {
             value = this.#evalTruth(map.source)
           }
           else {
@@ -422,27 +483,20 @@ const Questioner = class {
           }
 
           value = type(value.toString())
-          this.#addResult({ source : map, value })
-        }
-        else if (map.value !== undefined) {
-          const [value, issue] = verifyAnswerForm({
-            input : map.value.toString(),
+          this.#addResult({ action : map, value })
+        } // we are guaranteed to have either source or value by 'verifyInteractions()'
+        else {
+          // if (map.value !== undefined) {
+          const [value] = verifyAnswerForm({
+            input        : map.value.toString(),
             ...map,
             type,
+            _throw       : true,
+            // options for the ArgumentInvalidError, if thrown
+            endpointType : 'mapping to parameter',
+            status       : 500,
           })
-          if (issue !== undefined) {
-            throw new ArgumentInvalidError({
-              message : `Mapping to parameter '${map.parameter}' ${issue}.`,
-              status  : 500,
-            })
-          }
-          this.#addResult({ source : map, value })
-        }
-        else {
-          // this should already be verified up front, but for the sake of comopletness
-          throw new Error(
-            `Mapping for '${map.parameter}' must specify either 'source' or 'value'.`
-          )
+          this.#addResult({ action : map, value })
         }
       })
     }
@@ -456,7 +510,7 @@ const Questioner = class {
         break
       }
       else if (action.review !== undefined) {
-        included.slice(0, included.length) // truncate
+        included.splice(0, included.length) // truncate
         continue
       }
       const result = this.#getResultByIndex(action._index)
@@ -465,7 +519,7 @@ const Questioner = class {
         && (reviewType === 'all' || action.prompt !== undefined)
         && !result?.disposition.endsWith('skipped')
 
-      if (include) {
+      if (include === true) {
         if (action.prompt !== undefined) {
           included.push(action)
         }
@@ -490,7 +544,8 @@ const Questioner = class {
       reviewText += `[<bold>${action.parameter}<rst>]: <em>${this.get(action.parameter)}<rst>\n`
     }
 
-    const header = `<h2>Review ${included.length} ${reviewType === 'all' ? 'values' : 'answers'}:<rst>`
+    const sOrNot = included.length > 1 ? 's' : ''
+    const header = `<h2>Review ${included.length} ${reviewType === 'all' ? 'value' : 'answer'}${sOrNot}:<rst>`
 
     this.#write({
       options : { hangingIndent : 2 },
@@ -509,8 +564,10 @@ const Questioner = class {
         const it = rl[Symbol.asyncIterator]()
         const answer = (await it.next()).value.trim()
         const [value, issue] = verifyAnswerForm({
-          type  : BooleanString,
-          input : answer,
+          type    : BooleanString,
+          input   : answer,
+          message : 'Please answer yes or no (y/n).',
+          hint    : undefined,
         })
         if (issue === undefined) {
           return [value, included]
@@ -526,15 +583,7 @@ const Questioner = class {
   }
 
   async question() {
-    if (this.#interactions === undefined) {
-      throw ArgumentMissingError({
-        endpointType : 'function',
-        argumentName : 'interactions',
-        issue        : "must be set prior to invoking 'question'",
-        status       : 500,
-      })
-    }
-
+    // TODO: this is a holdover from earlier implementation, move process logic here
     await this.#processActions()
   }
 
@@ -550,36 +599,62 @@ const Questioner = class {
     }, {})
   }
 
-  #verifyInterrogationBundle() {
-    const verifyMapping = ({ maps }) => {
-      for (const { parameter, source, value } of maps) {
+  #verifyInteractions() {
+    if (
+      this.#interactions === undefined
+      || this.#interactions === null
+      || (Array.isArray(this.#interactions) && this.#interactions.length === 0)
+    ) {
+      throw new ArgumentMissingError({
+        endpointType  : 'function',
+        argumentName  : 'interactions',
+        argumentValue : this.#interactions,
+        status        : 500,
+      })
+    }
+
+    const verifyMapping = (i, { maps }) => {
+      for (const { parameter, source, type, value } of maps) {
         if (parameter === undefined) {
           throw new ArgumentInvalidError({
             endpointType : 'configuration',
             argumentName : 'interactions',
-            issue :
-              "one of the 'mapping' actions fails to specify a 'parameter'",
-            status : 500,
+            issue        : `'mapping' action ${i + 1} fails to specify a 'parameter'`,
+            status       : 500,
           })
         }
         if (source === undefined && value === undefined) {
           throw new ArgumentInvalidError({
             endpointType : 'configuration',
             argumentName : 'interactions',
-            issue        : `mapping for '${parameter}' must specify one of 'source' or 'value'`,
+            issue        : `mapping action ${i + 1} for '${parameter}' must specify one of 'source' or 'value'`,
             status       : 500,
           })
+        }
+        if (source !== undefined) {
+          const typeFunc = translateType(type)
+          // recall maps only support boolean and numeric types
+          if (![BooleanString, Integer, Numeric].includes(typeFunc)) {
+            throw new ArgumentTypeError({
+              endpointType : 'interactions',
+              argumentName : `interactions' action ${i + 1} for '${parameter}`,
+              receivedType : typeFunc,
+              argumentType : "bool', 'int', or 'numeric",
+              status       : 500,
+            })
+          }
         }
       }
     }
 
     this.#interactions.forEach((action, i) => {
-      if (
-        action.prompt === undefined
-        && action.maps === undefined
-        && action.statement === undefined
-        && action.review === undefined
-      ) {
+      const actionTypes = ['prompt', 'maps', 'statement', 'review']
+      const typeCount = actionTypes.reduce(
+        (count, type) => (action[type] === undefined ? count : count + 1),
+        0
+      )
+
+      if (typeCount === 0) {
         throw new ArgumentInvalidError({
           endpointType : 'configuration',
           argumentName : 'interactions',
@@ -587,8 +662,21 @@ const Questioner = class {
           status       : 500,
         })
       }
+      else if (typeCount > 1) {
+        throw new ArgumentInvalidError({
+          endpointType : 'configuration',
+          argumentName : 'interactions',
+          issue        : `action ${i + 1} defines multiple action types; must define on of 'prompt', 'maps', 'statement', nor 'review'`,
+          status       : 500,
+        })
+      }
       else if (action.prompt !== undefined) {
         // TODO: replace with some kind of JSON schema verification
+        const type = translateType(action.type, {
+          message : `Invalid parameter type '${action.type}' in interrogation bundle question ${i + 1}.`,
+          status  : 500,
+        })
+
         if (action.parameter === undefined) {
           throw new ArgumentInvalidError({
             endpointType : 'configuration',
@@ -597,33 +685,57 @@ const Questioner = class {
             status       : 500,
           })
         }
-        if (
-          action.type !== undefined
-          && typeof action.type === 'string'
-          && !action.type.match(/bool(?:ean)?|int(?:eger)?|float|numeric|string/)
-        ) {
-          throw new ArgumentInvalidError({
-            endpointType : 'configuration',
-            argumentName : 'interactions',
-            issue        : `invalid parameter type '${action.type}' in interrogation bundle question ${i + 1}`,
+        else if (this.has(action.parameter)) {
+          // then check the type
+          const value = this.get(action.parameter)
+          verifyAnswerForm({
+            ...action,
+            input        : value.toString(),
+            type,
+            _throw       : true,
+            // options for the error, if thrown
+            endpointType : 'parameter settings',
+            hint         : 'Check your initial parameters.',
             status       : 500,
           })
         }
       }
       else if (action.maps !== undefined) {
-        verifyMapping(action)
+        verifyMapping(i, action)
       }
       else if (action.review !== undefined) {
         if (!['all', 'questions'].includes(action.review)) {
           throw new ArgumentInvalidError({
             endpointType : 'configuration',
             argumentName : 'interactions',
-            issue        : `invalid review type '${action.review}'; must be 'all' or 'questions'`,
+            issue        : `invalid review type '${action.review}' for action ${i + 1}; must be 'all' or 'questions'`,
             status       : 500,
           })
         }
       }
-    })
+
+      if (action.options !== undefined) {
+        const { default: defaultValue, options } = action
+        if (!Array.isArray(options)) {
+          throw new ArgumentTypeError({
+            argumentName : "interactions' 'options",
+            issue        : "'options' must be an array",
+            status       : 500,
+          })
+        }
+        else if (
+          defaultValue !== undefined
+          && options.indexOf(defaultValue) === -1
+        ) {
+          throw new ArgumentInvalidError({
+            argumentName  : "interactions' 'default",
+            argumentValue : defaultValue,
+            issue         : 'is not any of the specified options',
+            status        : 500,
+          })
+        }
+      }
+    }) // foreach interaction
   }
 
   #write({ options, text }) {
@@ -636,14 +748,19 @@ const Questioner = class {
   }
 }
 
-const verifyAnswerForm = ({ type, input, ...paramOptions }) => {
+const verifyAnswerForm = ({ type, input, _throw, ...paramOptions }) => {
   const options = Object.assign({ name : paramOptions.parameter }, paramOptions)
+  delete options.parameter
   try {
     const value = type(input, options)
 
     return [value]
   }
   catch (e) {
+    if (_throw === true) {
+      throw e
+    }
+
     rethrowIf(e, { instanceOfNot : ArgumentInvalidError, statusIsNot : 400 })
 
     return [undefined, e.message]
