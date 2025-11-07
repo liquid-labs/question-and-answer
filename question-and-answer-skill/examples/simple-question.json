@@ -1,0 +1,8 @@
+{
+  "actions": [
+    { 
+      "prompt": "What is the value?", 
+      "parameter": "VAR" 
+    }
+  ]
+}
