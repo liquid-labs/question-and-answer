@@ -1,0 +1,6 @@
+{
+  "actions" : [
+    { "statement": "This is an <em>important<rst> question!" },
+    { "prompt" : "What's your <em>favorite<rst> number?", "parameter" : "IS_CLIENT", "type" : "int" }
+  ]
+}

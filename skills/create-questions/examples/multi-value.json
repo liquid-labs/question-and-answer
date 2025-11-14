@@ -1,0 +1,13 @@
+{
+  "actions": [
+    { 
+      "prompt": "What are your 2 or 3 favorite colors?",
+      "multiValue": true,
+      "parameter": "VAR",
+      "validations": {
+        "min-count": 2,
+        "max-count": 3
+      }
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "name": "question-and-answer-marketplace",
+  "owner": {
+    "name": "Zane Rockenbaugh",
+    "email": "zane@liquid-labs.com"
+  },
+  "metadata": {
+    "description": "Claude Code plugins for the question-and-answer library - Build interactive CLI questionnaires with validation, conditional logic, and AI assistance",
+    "version": "1.0.0-alpha.24"
+  },
+  "plugins": [
+    {
+      "name": "create-questions",
+      "source": "./skills/create-questions",
+      "description": "Build interactive CLI questionnaires with validation, conditional logic, parameter mapping, and review capabilities using the question-and-answer library",
+      "version": "1.0.0-alpha.24"
+    }
+  ]
+}

@@ -19,7 +19,18 @@
   "engines": {
     "node": ">=18.0.0"
   },
-  "keywords": [],
+  "keywords": [
+    "cli",
+    "questionnaire",
+    "interactive",
+    "interrogation",
+    "validation",
+    "survey",
+    "wizard",
+    "prompt",
+    "ai-assisted",
+    "claude-code"
+  ],
   "author": "Zane Rockenbaugh <zane@liquid-labs.com>",
   "license": "Apache-2.0",
   "repository": {
@@ -52,5 +63,13 @@
   },
   "_comply": {
     "orgKey": "@liquid-labs"
+  },
+  "ai": {
+    "integration": {
+      "guide": "./AI_INTEGRATION.md",
+      "skill": "./skills/create-questions/SKILL.md",
+      "examples": "./samples/",
+      "quickstart": "See README.md#library-usage for basic integration"
+    }
   }
 }
