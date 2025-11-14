@@ -43,7 +43,7 @@ npm install question-and-answer
 
 # Copy skill to Claude Code skills directory
 mkdir -p ~/.claude/skills
-cp -r node_modules/question-and-answer/skills/create-questions ~/.claude/skills/
+cp -r node_modules/question-and-answer/ai-ready/create-questions ~/.claude/skills/
 ```
 
 ### Option 3: Direct Git Clone
@@ -56,14 +56,14 @@ git clone https://github.com/liquid-labs/question-and-answer.git
 
 # Copy skill to Claude Code
 mkdir -p ~/.claude/skills
-cp -r question-and-answer/skills/create-questions ~/.claude/skills/
+cp -r question-and-answer/ai-ready/create-questions ~/.claude/skills/
 ```
 
 ### Option 4: Manual Download
 
 Users can download the skill directory and place it in `~/.claude/skills/`:
 
-1. Download the `skills/create-questions/` directory
+1. Download the `ai-ready/create-questions/` directory
 2. Place in `~/.claude/skills/create-questions/`
 3. Restart Claude Code
 

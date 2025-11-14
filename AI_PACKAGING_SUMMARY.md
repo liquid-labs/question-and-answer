@@ -45,7 +45,7 @@ This document summarizes the AI integration assets created for the question-and-
 ---
 
 ### 3. Claude Code Skill (Complete directory)
-**Location:** `/skills/create-questions/`
+**Location:** `/ai-ready/create-questions/`
 
 **Structure:**
 ```
@@ -93,7 +93,7 @@ create-questions/
   "ai": {
     "integration": {
       "guide": "./AI_INTEGRATION.md",
-      "skill": "./skills/create-questions/SKILL.md",
+      "skill": "./ai-ready/create-questions/SKILL.md",
       "examples": "./samples/",
       "quickstart": "See README.md#library-usage for basic integration"
     }
@@ -135,11 +135,11 @@ create-questions/
 **Skill Installation:**
 ```bash
 # Option 1: Manual installation
-cp -r node_modules/question-and-answer/skills/create-questions ~/.claude/skills/
+cp -r node_modules/question-and-answer/ai-ready/create-questions ~/.claude/skills/
 
 # Option 2: From repository
 git clone https://github.com/liquid-labs/question-and-answer.git
-cp -r question-and-answer/skills/create-questions ~/.claude/skills/
+cp -r question-and-answer/ai-ready/create-questions ~/.claude/skills/
 ```
 
 ### Long-term (Ecosystem Integration)
@@ -262,7 +262,7 @@ Skill loads only what's needed:
 
 1. **Test the skill:**
    ```bash
-   cp -r skills/create-questions ~/.claude/skills/
+   cp -r ai-ready/create-questions ~/.claude/skills/
    # Open Claude Code and ask about create-questions
    ```
 

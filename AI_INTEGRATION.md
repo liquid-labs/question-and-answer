@@ -484,4 +484,4 @@ const interactions = [
 - [condition-eval](https://github.com/liquid-labs/condition-eval) - Expression syntax for conditions and mappings
 - [specify-string](https://github.com/liquid-labs/specify-string) - Validation specification format
 - [Sample interrogations](./samples/) - Working examples
-- [Claude Code Skill](https://github.com/anthropics/skills/question-and-answer) - Interactive integration guide
+- [Claude Code Skill](https://github.com/anthropics/ai-ready/question-and-answer) - Interactive integration guide

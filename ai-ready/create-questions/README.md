@@ -18,7 +18,7 @@ A library for building interactive CLI questionnaires with validation, condition
 
    # Option 2: Manually
    mkdir -p ~/.claude/skills
-   cp -r skills/create-questions ~/.claude/skills/
+   cp -r ai-ready/create-questions ~/.claude/skills/
    ```
 
 2. The skill will be automatically loaded by Claude Code when relevant

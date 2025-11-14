@@ -16,7 +16,7 @@ npm i question-and-answer
 This library includes comprehensive AI integration support:
 
 - **[AI Integration Guide](./AI_INTEGRATION.md)** - Quick reference for AI assistants with common patterns
-- **[Claude Code Skill](./skills/create-questions/)** - Interactive skill for Claude Code users
+- **[Claude Code Skill](./ai-ready/create-questions/)** - Interactive skill for Claude Code users
 
 **Install the skill:**
 ```bash
@@ -24,7 +24,7 @@ This library includes comprehensive AI integration support:
 # Add this repository as a marketplace in Claude Code settings
 
 # Option 2: Manual installation
-cp -r skills/create-questions ~/.claude/skills/
+cp -r ai-ready/create-questions ~/.claude/skills/
 
 # Option 3: Via Anthropic's skills marketplace (pending submission)
 ```

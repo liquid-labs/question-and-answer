@@ -14,7 +14,7 @@ A Claude marketplace is a collection of plugins (skills) that can be installed i
 
 **Version:** 1.0.0-alpha.24
 
-**Location:** `./skills/create-questions/`
+**Location:** `./ai-ready/create-questions/`
 
 **Features:**
 - Progressive disclosure of documentation
@@ -42,7 +42,7 @@ Clone this repository and copy the skill:
 
 ```bash
 git clone https://github.com/liquid-labs/question-and-answer.git
-cp -r question-and-answer/skills/create-questions ~/.claude/skills/
+cp -r ai-ready/create-questions ~/.claude/skills/
 ```
 
 ### Option 3: From npm Package
@@ -51,7 +51,7 @@ If you've already installed the npm package:
 
 ```bash
 npm install question-and-answer
-cp -r node_modules/question-and-answer/skills/create-questions ~/.claude/skills/
+cp -r node_modules/question-and-answer/ai-ready/create-questions ~/.claude/skills/
 ```
 
 ## Marketplace Structure
@@ -84,7 +84,7 @@ Example structure:
   "plugins": [
     {
       "name": "create-questions",
-      "source": "./skills/create-questions",
+      "source": "./ai-ready/create-questions",
       "description": "Build interactive CLI questionnaires...",
       "version": "1.0.0-alpha.24"
     }
@@ -115,7 +115,7 @@ The marketplace version is synced with the npm package version. When you update 
 For issues or questions:
 - **GitHub Issues:** https://github.com/liquid-labs/question-and-answer/issues
 - **Documentation:** See [AI_INTEGRATION.md](../AI_INTEGRATION.md)
-- **Skill docs:** See [skills/create-questions/](../skills/create-questions/)
+- **Skill docs:** See [ai-ready/create-questions/](../ai-ready/create-questions/)
 
 ## Contributing
 
