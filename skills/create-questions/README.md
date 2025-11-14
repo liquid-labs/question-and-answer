@@ -1,6 +1,6 @@
-# question-and-answer Claude Code Skill
+# create-questions Claude Code Skill
 
-This skill helps Claude Code assist developers in integrating the `question-and-answer` library into their Node.js projects.
+This skill helps Claude Code assist developers in integrating the `question-and-answer` library into their Node.js projects to create interactive CLI questionnaires.
 
 ## What is question-and-answer?
 
@@ -10,14 +10,15 @@ A library for building interactive CLI questionnaires with validation, condition
 
 ### For Claude Code Users
 
-1. Clone or copy this directory to your Claude Code skills location:
+1. Install via the Claude marketplace or manually:
    ```bash
-   # Using Claude Code plugin manager
-   claude-code install-skill question-and-answer
+   # Option 1: Via marketplace
+   # Add https://github.com/liquid-labs/question-and-answer as marketplace
+   # Then install create-questions plugin
 
-   # Or manually
+   # Option 2: Manually
    mkdir -p ~/.claude/skills
-   cp -r question-and-answer-skill ~/.claude/skills/
+   cp -r skills/create-questions ~/.claude/skills/
    ```
 
 2. The skill will be automatically loaded by Claude Code when relevant

@@ -1,5 +1,5 @@
 ---
-name: question-and-answer
+name: create-questions
 description: Build interactive CLI questionnaires with validation, conditional logic, parameter mapping, and review capabilities using the question-and-answer library
 ---
 
